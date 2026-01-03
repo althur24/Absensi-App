@@ -42,7 +42,8 @@ interface UserSummary {
     email: string;
     checkin_time: string | null;
     checkout_time: string | null;
-    status: 'not_checked_in' | 'checked_in' | 'complete';
+    status: 'not_checked_in' | 'checked_in' | 'complete' | 'on_leave';
+    leave?: { type: string; reason?: string } | null;
 }
 
 interface WeeklyData {
@@ -141,14 +142,18 @@ export default function AdminDashboardPage() {
         switch (status) {
             case 'complete': return 'bg-green-100 text-green-700 border-green-200';
             case 'checked_in': return 'bg-amber-100 text-amber-700 border-amber-200';
+            case 'on_leave': return 'bg-blue-100 text-blue-700 border-blue-200';
             default: return 'bg-red-100 text-red-700 border-red-200';
         }
     };
 
-    const getStatusText = (status: string) => {
+    const getStatusText = (status: string, leave?: { type: string; reason?: string } | null) => {
         switch (status) {
             case 'complete': return 'Lengkap';
             case 'checked_in': return 'Belum Pulang';
+            case 'on_leave':
+                const leaveType = leave?.type ? leave.type.charAt(0).toUpperCase() + leave.type.slice(1) : 'Izin';
+                return leave?.reason ? `${leaveType}: ${leave.reason}` : leaveType;
             default: return 'Belum Absen';
         }
     };
@@ -384,7 +389,7 @@ export default function AdminDashboardPage() {
                                         </div>
                                         <div className="text-right">
                                             <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(user.status)}`}>
-                                                {getStatusText(user.status)}
+                                                {getStatusText(user.status, user.leave)}
                                             </span>
                                             <div className="text-xs text-gray-500 mt-1">
                                                 {user.checkin_time && (

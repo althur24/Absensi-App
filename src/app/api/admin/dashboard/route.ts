@@ -91,6 +91,12 @@ export async function GET(request: Request) {
             }
         });
 
+        // Fetch today's leaves (izin, sakit, cuti, dinas)
+        const { data: todayLeaves } = await supabase
+            .from('leaves')
+            .select('user_id, type, reason')
+            .eq('date', today);
+
         // 1. Process Today's Stats
         const todayUserStats = weeklyStatsMap[today] || {};
         const checkedIn = Object.values(todayUserStats).filter(s => s.checkin).length;
@@ -189,9 +195,17 @@ export async function GET(request: Request) {
         // 5. User Summary
         const summary = users?.map(user => {
             const stats = todayUserStats[user.id] || {};
-            let status: 'not_checked_in' | 'checked_in' | 'complete' = 'not_checked_in';
+            const leave = todayLeaves?.find(l => l.user_id === user.id);
+            let status: 'not_checked_in' | 'checked_in' | 'complete' | 'on_leave' = 'not_checked_in';
+            let leaveInfo = null;
 
-            if (stats.checkin && stats.checkout) {
+            if (leave) {
+                status = 'on_leave';
+                leaveInfo = {
+                    type: leave.type,
+                    reason: leave.reason
+                };
+            } else if (stats.checkin && stats.checkout) {
                 status = 'complete';
             } else if (stats.checkin) {
                 status = 'checked_in';
@@ -204,11 +218,12 @@ export async function GET(request: Request) {
                 checkin_time: stats.checkin || null,
                 checkout_time: stats.checkout || null,
                 status,
+                leave: leaveInfo,
             };
         }) || [];
 
         summary.sort((a, b) => {
-            const order = { not_checked_in: 0, checked_in: 1, complete: 2 };
+            const order = { not_checked_in: 0, on_leave: 1, checked_in: 2, complete: 3 };
             return order[a.status] - order[b.status];
         });
 
