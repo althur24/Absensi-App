@@ -266,7 +266,7 @@ export default function SettingsPage() {
                             <MapPicker
                                 latitude={locationConfig.latitude}
                                 longitude={locationConfig.longitude}
-                                radius={locationConfig.radius_meters}
+                                radius={Math.max(1, locationConfig.radius_meters || 1)}
                                 onLocationChange={(lat, lng) => setLocationConfig(prev => ({ ...prev, latitude: lat, longitude: lng }))}
                             />
                         </div>
@@ -286,8 +286,14 @@ export default function SettingsPage() {
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Radius Absen (Meter)</label>
                                 <input
                                     type="number"
-                                    value={locationConfig.radius_meters}
-                                    onChange={e => setLocationConfig({ ...locationConfig, radius_meters: parseInt(e.target.value) })}
+                                    min="1"
+                                    value={locationConfig.radius_meters || ''}
+                                    onChange={e => {
+                                        const val = e.target.value;
+                                        // Prevent NaN by defaulting to 0 if empty
+                                        const numVal = val === '' ? 0 : parseInt(val);
+                                        setLocationConfig({ ...locationConfig, radius_meters: isNaN(numVal) ? 0 : numVal });
+                                    }}
                                     className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 outline-none"
                                 />
                             </div>

@@ -196,18 +196,7 @@ export default function AttendanceButton({ type, onSuccess }: AttendanceButtonPr
                 </div>
             )}
 
-            {/* Interactive Map (Restored) */}
-            {officeConfig && (
-                <div className="mt-6 w-full">
-                    <AttendanceMap
-                        officeLat={officeConfig.latitude}
-                        officeLng={officeConfig.longitude}
-                        officeRadius={officeConfig.radius_meters}
-                        userLat={livePos?.lat ?? null}
-                        userLng={livePos?.lng ?? null}
-                    />
-                </div>
-            )}
+
 
             {/* Camera Modal */}
             {showCamera && (
