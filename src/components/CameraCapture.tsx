@@ -143,18 +143,27 @@ export default function CameraCapture({ onCapture, onClose }: CameraCaptureProps
                         </button>
                     </div>
                 ) : (
-                    <video
-                        ref={videoRef}
-                        autoPlay
-                        playsInline
-                        muted
-                        onLoadedMetadata={() => {
-                            if (videoRef.current) {
-                                videoRef.current.play().catch(e => console.error("Play error:", e));
-                            }
-                        }}
-                        className={`w-full h-full object-cover ${facingMode === 'user' ? 'scale-x-[-1]' : ''}`}
-                    />
+                    <>
+                        <video
+                            ref={(node) => {
+                                videoRef.current = node;
+                                if (node && stream) {
+                                    node.srcObject = stream;
+                                    node.play().catch(e => console.error("Force play error:", e));
+                                }
+                            }}
+                            autoPlay
+                            playsInline
+                            muted
+                            className={`w-full h-full object-cover bg-black ${facingMode === 'user' ? 'scale-x-[-1]' : ''}`}
+                        />
+                        {/* Debug Info (Temporary) */}
+                        <div className="absolute top-20 left-4 text-xs text-green-400 bg-black/50 p-2 rounded pointer-events-none">
+                            <p>Status: {stream ? 'Stream Active' : 'No Stream'}</p>
+                            <p>Tracks: {stream?.getVideoTracks().length || 0}</p>
+                            <p>Facing: {facingMode}</p>
+                        </div>
+                    </>
                 )}
             </div>
 
