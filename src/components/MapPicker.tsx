@@ -129,7 +129,7 @@ export default function MapPicker({ latitude, longitude, radius, onLocationChang
                     type="button"
                     onClick={handleSearch}
                     disabled={searching}
-                    className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 flex items-center gap-2"
+                    className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 flex items-center gap-2 shrink-0"
                 >
                     {searching ? (
                         <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
@@ -141,7 +141,7 @@ export default function MapPicker({ latitude, longitude, radius, onLocationChang
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                         </svg>
                     )}
-                    Cari
+                    <span className="hidden sm:inline">Cari</span>
                 </button>
                 <button
                     type="button"
@@ -169,11 +169,11 @@ export default function MapPicker({ latitude, longitude, radius, onLocationChang
                         }
                     }}
                     disabled={searching}
-                    className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 flex items-center gap-2"
+                    className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 flex items-center gap-2 shrink-0"
                     title="Gunakan Lokasi Saat Ini"
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-crosshair"><circle cx="12" cy="12" r="10" /><line x1="22" x2="18" y1="12" y2="12" /><line x1="6" x2="2" y1="12" y2="12" /><line x1="12" x2="12" y1="6" y2="2" /><line x1="12" x2="12" y1="22" y2="18" /></svg>
-                    Lokasi Saya
+                    <span className="hidden sm:inline">Lokasi Saya</span>
                 </button>
             </div>
 
