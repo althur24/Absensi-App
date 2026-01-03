@@ -32,6 +32,8 @@ export async function GET(request: Request) {
 
         const totalUsers = users?.length || 0;
 
+        const validUserIds = new Set(users?.map(u => u.id));
+
         // Get today's attendance
         const { data: todayAttendance } = await supabase
             .from('attendance')
@@ -43,6 +45,9 @@ export async function GET(request: Request) {
         const userStats: Record<string, { checkin?: string; checkout?: string }> = {};
 
         todayAttendance?.forEach(record => {
+            // Skip if user is not in the active employee list (e.g. Admin or Inactive)
+            if (!validUserIds.has(record.user_id)) return;
+
             if (!userStats[record.user_id]) {
                 userStats[record.user_id] = {};
             }
@@ -99,6 +104,9 @@ export async function GET(request: Request) {
 
             const dayStats: Record<string, { checkin?: boolean; checkout?: boolean }> = {};
             dayAttendance?.forEach(record => {
+                // Skip if user is not in the active employee list
+                if (!validUserIds.has(record.user_id)) return;
+
                 if (!dayStats[record.user_id]) {
                     dayStats[record.user_id] = {};
                 }
