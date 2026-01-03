@@ -2,6 +2,16 @@ import { NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase';
 import { getSession } from '@/lib/session';
 
+// Helper function to get WIB date range
+function getWIBDateRange(dateStr: string): { start: string; end: string } {
+    const wibStart = new Date(`${dateStr}T00:00:00+07:00`);
+    const wibEnd = new Date(`${dateStr}T23:59:59+07:00`);
+    return {
+        start: wibStart.toISOString(),
+        end: wibEnd.toISOString()
+    };
+}
+
 export async function GET(request: Request) {
     try {
         const session = await getSession();
@@ -32,6 +42,7 @@ export async function GET(request: Request) {
             case 'daily': {
                 // Daily report - all employees for a specific date
                 const targetDate = date || new Date().toISOString().split('T')[0];
+                const range = getWIBDateRange(targetDate);
 
                 const { data: users } = await supabase
                     .from('users')
@@ -42,8 +53,8 @@ export async function GET(request: Request) {
                 const { data: attendance } = await supabase
                     .from('attendance')
                     .select('user_id, type, created_at')
-                    .gte('created_at', `${targetDate}T00:00:00`)
-                    .lt('created_at', `${targetDate}T23:59:59`);
+                    .gte('created_at', range.start)
+                    .lte('created_at', range.end);
 
                 const { data: leaves } = await supabase
                     .from('leaves')
@@ -69,18 +80,19 @@ export async function GET(request: Request) {
 
                     if (checkin) {
                         const checkinTime = new Date(checkin.created_at);
+                        const checkinWIB = new Date(checkinTime.toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
                         const [lateHour, lateMinute] = lateThreshold.split(':').map(Number);
-                        const thresholdTime = new Date(checkinTime);
+                        const thresholdTime = new Date(checkinWIB);
                         thresholdTime.setHours(lateHour, lateMinute, 0, 0);
-                        isLate = checkinTime > thresholdTime;
+                        isLate = checkinWIB > thresholdTime;
                     }
 
                     return {
                         name: user.name,
                         email: user.email,
                         status,
-                        checkin_time: checkin ? new Date(checkin.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '-',
-                        checkout_time: checkout ? new Date(checkout.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '-',
+                        checkin_time: checkin ? new Date(checkin.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' }) : '-',
+                        checkout_time: checkout ? new Date(checkout.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' }) : '-',
                         is_late: isLate ? 'Ya' : 'Tidak',
                     };
                 }) || [];
@@ -99,6 +111,9 @@ export async function GET(request: Request) {
                 const endOfMonth = new Date(year, mon, 0).toISOString().split('T')[0];
                 const daysInMonth = new Date(year, mon, 0).getDate();
 
+                const startRange = getWIBDateRange(startOfMonth);
+                const endRange = getWIBDateRange(endOfMonth);
+
                 const { data: users } = await supabase
                     .from('users')
                     .select('id, name, email')
@@ -108,8 +123,8 @@ export async function GET(request: Request) {
                 const { data: attendance } = await supabase
                     .from('attendance')
                     .select('user_id, type, created_at')
-                    .gte('created_at', `${startOfMonth}T00:00:00`)
-                    .lte('created_at', `${endOfMonth}T23:59:59`);
+                    .gte('created_at', startRange.start)
+                    .lte('created_at', endRange.end);
 
                 const { data: leaves } = await supabase
                     .from('leaves')
@@ -121,23 +136,30 @@ export async function GET(request: Request) {
                     const userAttendance = attendance?.filter(a => a.user_id === user.id) || [];
                     const userLeaves = leaves?.filter(l => l.user_id === user.id) || [];
 
-                    // Count unique days with check-in
+                    // Count unique WIB days with check-in
                     const attendedDays = new Set(
                         userAttendance
                             .filter(a => a.type === 'checkin')
-                            .map(a => a.created_at.split('T')[0])
+                            .map(a => {
+                                const wibDate = new Date(a.created_at).toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' });
+                                return wibDate;
+                            })
                     );
 
                     // Count late days
                     let lateDays = 0;
                     attendedDays.forEach(day => {
-                        const checkin = userAttendance.find(a => a.type === 'checkin' && a.created_at.startsWith(day));
+                        const checkin = userAttendance.find(a => {
+                            const wibDate = new Date(a.created_at).toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' });
+                            return a.type === 'checkin' && wibDate === day;
+                        });
                         if (checkin) {
                             const checkinTime = new Date(checkin.created_at);
+                            const checkinWIB = new Date(checkinTime.toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
                             const [lateHour, lateMinute] = lateThreshold.split(':').map(Number);
-                            const thresholdTime = new Date(checkinTime);
+                            const thresholdTime = new Date(checkinWIB);
                             thresholdTime.setHours(lateHour, lateMinute, 0, 0);
-                            if (checkinTime > thresholdTime) lateDays++;
+                            if (checkinWIB > thresholdTime) lateDays++;
                         }
                     });
 
@@ -182,12 +204,15 @@ export async function GET(request: Request) {
                     return NextResponse.json({ error: 'User tidak ditemukan' }, { status: 404 });
                 }
 
+                const startRange = getWIBDateRange(startDate);
+                const endRange = getWIBDateRange(endDate);
+
                 const { data: attendance } = await supabase
                     .from('attendance')
                     .select('type, created_at, latitude, longitude')
                     .eq('user_id', userId)
-                    .gte('created_at', `${startDate}T00:00:00`)
-                    .lte('created_at', `${endDate}T23:59:59`)
+                    .gte('created_at', startRange.start)
+                    .lte('created_at', endRange.end)
                     .order('created_at', { ascending: true });
 
                 const { data: leaves } = await supabase
@@ -197,15 +222,15 @@ export async function GET(request: Request) {
                     .gte('date', startDate)
                     .lte('date', endDate);
 
-                // Group by date
+                // Group by WIB date
                 const dateMap: Record<string, { checkin?: string; checkout?: string; leave?: string }> = {};
 
                 attendance?.forEach(a => {
-                    const date = a.created_at.split('T')[0];
-                    if (!dateMap[date]) dateMap[date] = {};
-                    const time = new Date(a.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-                    if (a.type === 'checkin') dateMap[date].checkin = time;
-                    else dateMap[date].checkout = time;
+                    const wibDate = new Date(a.created_at).toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' });
+                    if (!dateMap[wibDate]) dateMap[wibDate] = {};
+                    const time = new Date(a.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' });
+                    if (a.type === 'checkin') dateMap[wibDate].checkin = time;
+                    else dateMap[wibDate].checkout = time;
                 });
 
                 leaves?.forEach(l => {
@@ -235,6 +260,9 @@ export async function GET(request: Request) {
                 const startOfMonth = `${targetMonth}-01`;
                 const endOfMonth = new Date(year, mon, 0).toISOString().split('T')[0];
 
+                const startRange = getWIBDateRange(startOfMonth);
+                const endRange = getWIBDateRange(endOfMonth);
+
                 const { data: users } = await supabase
                     .from('users')
                     .select('id, name, email')
@@ -245,8 +273,8 @@ export async function GET(request: Request) {
                     .from('attendance')
                     .select('user_id, created_at')
                     .eq('type', 'checkin')
-                    .gte('created_at', `${startOfMonth}T00:00:00`)
-                    .lte('created_at', `${endOfMonth}T23:59:59`);
+                    .gte('created_at', startRange.start)
+                    .lte('created_at', endRange.end);
 
                 const report = users?.map(user => {
                     const userCheckins = attendance?.filter(a => a.user_id === user.id) || [];
@@ -255,12 +283,15 @@ export async function GET(request: Request) {
 
                     userCheckins.forEach(checkin => {
                         const checkinTime = new Date(checkin.created_at);
+                        const checkinWIB = new Date(checkinTime.toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
                         const [lateHour, lateMinute] = lateThreshold.split(':').map(Number);
-                        const thresholdTime = new Date(checkinTime);
+                        const thresholdTime = new Date(checkinWIB);
                         thresholdTime.setHours(lateHour, lateMinute, 0, 0);
-                        if (checkinTime > thresholdTime) {
+                        if (checkinWIB > thresholdTime) {
                             lateDays++;
-                            lateTimes.push(`${checkin.created_at.split('T')[0]} (${checkinTime.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })})`);
+                            const wibDate = new Date(checkin.created_at).toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' });
+                            const wibTime = checkinWIB.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+                            lateTimes.push(`${wibDate} (${wibTime})`);
                         }
                     });
 
