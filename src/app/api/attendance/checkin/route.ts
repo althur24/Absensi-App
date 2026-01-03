@@ -71,6 +71,8 @@ export async function POST(request: Request) {
             );
         }
 
+        console.log('[CheckIn Debug] Payload:', { user_id: session.id, latitude, longitude });
+
         // Create attendance record
         const { data: attendance, error } = await supabase
             .from('attendance')
@@ -87,8 +89,11 @@ export async function POST(request: Request) {
             .single();
 
         if (error) {
+            console.error('[CheckIn Error] Insert failed:', error);
             throw error;
         }
+
+        console.log('[CheckIn Check] Success! New ID:', attendance?.id);
 
         return NextResponse.json({
             success: true,
@@ -96,7 +101,7 @@ export async function POST(request: Request) {
             attendance,
         });
     } catch (error) {
-        console.error('Check-in error:', error);
+        console.error('Check-in error full:', error);
         return NextResponse.json(
             { error: 'Terjadi kesalahan server' },
             { status: 500 }

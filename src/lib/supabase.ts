@@ -30,6 +30,9 @@ export function createServerClient(): SupabaseClient {
         );
     }
 
+    // Debug URL (safe part)
+    console.log('Supabase Server Client Init to:', supabaseUrl.substring(0, 20) + '...');
+
     return createClient(supabaseUrl, supabaseServiceKey, {
         auth: {
             autoRefreshToken: false,
