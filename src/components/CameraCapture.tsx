@@ -29,8 +29,8 @@ export default function CameraCapture({ onCapture, onClose }: CameraCaptureProps
         try {
             stopCamera();
 
-            // Check if HTTPS
-            if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
+            // Check if HTTPS (or localhost)
+            if (typeof window !== 'undefined' && location.protocol !== 'https:' && location.hostname !== 'localhost') {
                 throw new Error('Kamera hanya berjalan di HTTPS.');
             }
 
@@ -44,11 +44,13 @@ export default function CameraCapture({ onCapture, onClose }: CameraCaptureProps
 
             if (videoRef.current) {
                 videoRef.current.srcObject = mediaStream;
+                // Explicit play attempt for some browsers
+                videoRef.current.play().catch(e => console.warn("Auto-play failed:", e));
                 setStream(mediaStream);
             }
         } catch (err) {
             console.error('Camera error:', err);
-            setError(err instanceof Error ? err.message : 'Gagal mengakses kamera.');
+            setError(err instanceof Error ? err.message : 'Gagal mengakses kamera. Pastikan izin diberikan.');
         } finally {
             setLoading(false);
         }
@@ -56,7 +58,11 @@ export default function CameraCapture({ onCapture, onClose }: CameraCaptureProps
 
     const stopCamera = () => {
         if (stream) {
-            stream.getTracks().forEach(track => track.stop());
+            stream.getTracks().forEach(track => {
+                track.stop();
+                // Ensure track is really stopped
+                track.enabled = false;
+            });
             setStream(null);
         }
     };
@@ -84,7 +90,7 @@ export default function CameraCapture({ onCapture, onClose }: CameraCaptureProps
         canvas.toBlob(
             (blob) => {
                 if (blob) {
-                    stopCamera();
+                    stopCamera(); // Stop camera immediately after capture
                     onCapture(blob);
                 }
             },
@@ -119,8 +125,8 @@ export default function CameraCapture({ onCapture, onClose }: CameraCaptureProps
                 </button>
             </div>
 
-            {/* Video Preview */}
-            <div className="flex-1 flex items-center justify-center">
+            {/* Video Preview Container */}
+            <div className="flex-1 flex items-center justify-center bg-black relative">
                 {loading ? (
                     <div className="flex flex-col items-center gap-3">
                         <Loader2 className="w-10 h-10 text-white animate-spin" />
@@ -142,7 +148,12 @@ export default function CameraCapture({ onCapture, onClose }: CameraCaptureProps
                         autoPlay
                         playsInline
                         muted
-                        className={`max-h-[70vh] bg-black w-full h-full object-cover ${facingMode === 'user' ? 'scale-x-[-1]' : ''}`}
+                        onLoadedMetadata={() => {
+                            if (videoRef.current) {
+                                videoRef.current.play().catch(e => console.error("Play error:", e));
+                            }
+                        }}
+                        className={`w-full h-full object-cover ${facingMode === 'user' ? 'scale-x-[-1]' : ''}`}
                     />
                 )}
             </div>
