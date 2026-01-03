@@ -29,11 +29,15 @@ export default function CameraCapture({ onCapture, onClose }: CameraCaptureProps
         try {
             stopCamera();
 
+            // Check if HTTPS
+            if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
+                throw new Error('Kamera hanya berjalan di HTTPS.');
+            }
+
             const mediaStream = await navigator.mediaDevices.getUserMedia({
                 video: {
                     facingMode,
-                    width: { ideal: 1280 },
-                    height: { ideal: 720 },
+                    // Relaxed constraints for better mobile compatibility
                 },
                 audio: false,
             });
@@ -42,8 +46,9 @@ export default function CameraCapture({ onCapture, onClose }: CameraCaptureProps
                 videoRef.current.srcObject = mediaStream;
                 setStream(mediaStream);
             }
-        } catch {
-            setError('Gagal mengakses kamera. Pastikan izin kamera diberikan.');
+        } catch (err) {
+            console.error('Camera error:', err);
+            setError(err instanceof Error ? err.message : 'Gagal mengakses kamera.');
         } finally {
             setLoading(false);
         }
@@ -137,7 +142,7 @@ export default function CameraCapture({ onCapture, onClose }: CameraCaptureProps
                         autoPlay
                         playsInline
                         muted
-                        className={`max-h-[70vh] ${facingMode === 'user' ? 'scale-x-[-1]' : ''}`}
+                        className={`max-h-[70vh] bg-black w-full h-full object-cover ${facingMode === 'user' ? 'scale-x-[-1]' : ''}`}
                     />
                 )}
             </div>
