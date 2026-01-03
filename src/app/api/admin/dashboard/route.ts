@@ -10,18 +10,29 @@ export async function GET(request: Request) {
         }
 
         const { searchParams } = new URL(request.url);
-        const today = searchParams.get('date') || new Date().toISOString().split('T')[0];
+
+        // Timezone Helper: Get WIB Date String (YYYY-MM-DD)
+        const getWIBDateStr = (date: Date = new Date()) => {
+            return date.toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' }); // Returns YYYY-MM-DD
+        };
+
+        const today = searchParams.get('date') || getWIBDateStr();
 
         const supabase = createServerClient();
 
-        // Get office config for late threshold
+        // Get office config & work hours
         const { data: configData } = await supabase
             .from('config')
-            .select('value')
-            .eq('key', 'work_hours')
-            .single();
+            .select('*')
+            .in('key', ['work_hours']);
 
-        const lateThreshold = configData?.value?.late_threshold || '09:00';
+        let workHours = { late_threshold: '09:00' };
+        if (configData) {
+            const wh = configData.find(c => c.key === 'work_hours');
+            if (wh) workHours = { ...workHours, ...wh.value };
+        }
+
+        const lateThreshold = workHours.late_threshold;
 
         // Get all active users
         const { data: users } = await supabase
@@ -31,15 +42,14 @@ export async function GET(request: Request) {
             .eq('role', 'user');
 
         const totalUsers = users?.length || 0;
-
         const validUserIds = new Set(users?.map(u => u.id));
 
-        // Calculate 7 days ago
-        const sevenDaysAgo = new Date();
-        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6); // Includes today so -6
-        const dateLimitStr = sevenDaysAgo.toISOString().split('T')[0];
+        // Calculate 7 days ago (WIB based logic)
+        const bufferDate = new Date();
+        bufferDate.setDate(bufferDate.getDate() - 8);
+        const dateLimitStr = bufferDate.toISOString().split('T')[0];
 
-        // OPTIMIZED: Fetch all attendance for the last 7 days in one query
+        // OPTIMIZED: Fetch all attendance for the last ~8 days
         const { data: recentAttendance } = await supabase
             .from('attendance')
             .select('user_id, type, created_at')
@@ -47,49 +57,41 @@ export async function GET(request: Request) {
             .order('created_at', { ascending: true });
 
         // Process data in memory
-        const todayData: typeof recentAttendance = [];
         const weeklyStatsMap: Record<string, Record<string, { checkin?: string; checkout?: string }>> = {};
-        // Map<DateString, Map<UserId, {checkin, checkout}>>
 
-        // Initialize weekly map structure for all 7 days
+        // Initialize last 7 days keys (WIB)
         const last7Days: string[] = [];
         for (let i = 6; i >= 0; i--) {
             const d = new Date();
             d.setDate(d.getDate() - i);
-            const dStr = d.toISOString().split('T')[0];
-            last7Days.push(dStr);
-            weeklyStatsMap[dStr] = {};
+            const wibStr = getWIBDateStr(d);
+            last7Days.push(wibStr);
+            weeklyStatsMap[wibStr] = {};
         }
 
         recentAttendance?.forEach(record => {
-            // Skip non-active users (e.g. Admin)
             if (!validUserIds.has(record.user_id)) return;
 
-            const recordDate = record.created_at.split('T')[0];
+            // Convert Record UTC to WIB YYYY-MM-DD
+            const recDate = new Date(record.created_at);
+            const wibDateStr = getWIBDateStr(recDate);
 
-            // Filter for Today's specific processing
-            if (recordDate === today) {
-                todayData.push(record);
-            }
-
-            // Populate Weekly Stats Map
-            if (weeklyStatsMap[recordDate]) {
-                if (!weeklyStatsMap[recordDate][record.user_id]) {
-                    weeklyStatsMap[recordDate][record.user_id] = {};
+            // Only process if matches one of our map keys (last 7 days)
+            if (weeklyStatsMap[wibDateStr] !== undefined) {
+                if (!weeklyStatsMap[wibDateStr][record.user_id]) {
+                    weeklyStatsMap[wibDateStr][record.user_id] = {};
                 }
-                const dayUserStats = weeklyStatsMap[recordDate][record.user_id];
+                const dayUserStats = weeklyStatsMap[wibDateStr][record.user_id];
 
                 if (record.type === 'checkin') {
-                    // Keep earliest checkin if duplicates exist (though UI prevents it, safety net)
                     if (!dayUserStats.checkin) dayUserStats.checkin = record.created_at;
                 } else {
-                    // Keep latest checkout
                     dayUserStats.checkout = record.created_at;
                 }
             }
         });
 
-        // 1. Process Today's Stats (for Cards & List)
+        // 1. Process Today's Stats
         const todayUserStats = weeklyStatsMap[today] || {};
         const checkedIn = Object.values(todayUserStats).filter(s => s.checkin).length;
         const complete = Object.values(todayUserStats).filter(s => s.checkin && s.checkout).length;
@@ -99,12 +101,15 @@ export async function GET(request: Request) {
         const lateEmployees: Array<{ id: string; name: string; email: string; checkin_time: string }> = [];
         Object.entries(todayUserStats).forEach(([userId, stats]) => {
             if (stats.checkin) {
-                const checkinTime = new Date(stats.checkin);
-                const [lateHour, lateMinute] = lateThreshold.split(':').map(Number);
-                const thresholdTime = new Date(checkinTime);
-                thresholdTime.setHours(lateHour, lateMinute, 0, 0);
+                // Convert to WIB HH:MM
+                const checkinDate = new Date(stats.checkin);
+                const checkinTimeStr = checkinDate.toLocaleTimeString('en-GB', {
+                    timeZone: 'Asia/Jakarta',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
 
-                if (checkinTime > thresholdTime) {
+                if (checkinTimeStr > lateThreshold) {
                     const user = users?.find(u => u.id === userId);
                     if (user) {
                         lateEmployees.push({
@@ -118,9 +123,9 @@ export async function GET(request: Request) {
             }
         });
 
-        // 3. Weekly Chart Data construction
+        // 3. Weekly Chart Data
         const weeklyData = last7Days.map(dateStr => {
-            const dayStats = weeklyStatsMap[dateStr];
+            const dayStats = weeklyStatsMap[dateStr] || {};
             const dayPresent = Object.keys(dayStats).length;
             const dayComplete = Object.values(dayStats).filter(s => s.checkin && s.checkout).length;
             const dayDate = new Date(dateStr);
@@ -135,19 +140,20 @@ export async function GET(request: Request) {
             };
         });
 
-        // 4. Calculate Averages (Using 7 Days Data) for smoother metrics
+        // 4. Calculate Averages
         let totalCheckinMinutes = 0;
         let totalCheckinCount = 0;
         let totalDurationMinutes = 0;
         let totalDurationCount = 0;
 
-        // Iterate over all days in the map
         Object.values(weeklyStatsMap).forEach(dayUsers => {
             Object.values(dayUsers).forEach(stats => {
-                // Avg Checkin Time
+                // Avg Checkin (Use WIB Hour/Minute)
                 if (stats.checkin) {
                     const time = new Date(stats.checkin);
-                    totalCheckinMinutes += time.getHours() * 60 + time.getMinutes();
+                    const wibTimeStr = time.toLocaleTimeString('en-GB', { timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit' });
+                    const [h, m] = wibTimeStr.split(':').map(Number);
+                    totalCheckinMinutes += h * 60 + m;
                     totalCheckinCount++;
                 }
                 // Avg Duration
@@ -155,7 +161,7 @@ export async function GET(request: Request) {
                     const checkin = new Date(stats.checkin);
                     const checkout = new Date(stats.checkout);
                     const durationMins = (checkout.getTime() - checkin.getTime()) / 60000;
-                    if (durationMins > 0) { // Safety check
+                    if (durationMins > 0) {
                         totalDurationMinutes += durationMins;
                         totalDurationCount++;
                     }
@@ -171,7 +177,7 @@ export async function GET(request: Request) {
             ? `${Math.floor(totalDurationMinutes / totalDurationCount / 60)}j ${Math.round((totalDurationMinutes / totalDurationCount) % 60)}m`
             : '--';
 
-        // 5. User Summary (Today)
+        // 5. User Summary
         const summary = users?.map(user => {
             const stats = todayUserStats[user.id] || {};
             let status: 'not_checked_in' | 'checked_in' | 'complete' = 'not_checked_in';
@@ -192,12 +198,10 @@ export async function GET(request: Request) {
             };
         }) || [];
 
-        // Sort: not checked in first
         summary.sort((a, b) => {
             const order = { not_checked_in: 0, checked_in: 1, complete: 2 };
             return order[a.status] - order[b.status];
         });
-
 
         return NextResponse.json({
             date: today,
