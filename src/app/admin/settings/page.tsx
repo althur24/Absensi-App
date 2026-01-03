@@ -3,6 +3,9 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { LogOut, Save, MapPin, Clock, ArrowLeft, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
+import dynamic from 'next/dynamic';
+
+const MapPicker = dynamic(() => import('@/components/MapPicker'), { ssr: false, loading: () => <div className="w-full h-64 bg-gray-100 rounded-xl animate-pulse" /> });
 
 interface LocationConfig {
     latitude: number;
@@ -256,6 +259,18 @@ export default function SettingsPage() {
                     </div>
 
                     <form onSubmit={handleSaveLocation} className="p-6 space-y-6">
+
+                        {/* MAP PICKER INTEGRATION */}
+                        <div className="w-full">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Pilih Lokasi di Peta</label>
+                            <MapPicker
+                                latitude={locationConfig.latitude}
+                                longitude={locationConfig.longitude}
+                                radius={locationConfig.radius_meters}
+                                onLocationChange={(lat, lng) => setLocationConfig(prev => ({ ...prev, latitude: lat, longitude: lng }))}
+                            />
+                        </div>
+
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Nama Lokasi</label>
@@ -283,7 +298,7 @@ export default function SettingsPage() {
                                     step="any"
                                     value={locationConfig.latitude}
                                     onChange={e => setLocationConfig({ ...locationConfig, latitude: parseFloat(e.target.value) })}
-                                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 outline-none font-mono text-sm"
+                                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 outline-none font-mono text-sm bg-gray-50"
                                 />
                             </div>
                             <div>
@@ -293,14 +308,9 @@ export default function SettingsPage() {
                                     step="any"
                                     value={locationConfig.longitude}
                                     onChange={e => setLocationConfig({ ...locationConfig, longitude: parseFloat(e.target.value) })}
-                                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 outline-none font-mono text-sm"
+                                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 outline-none font-mono text-sm bg-gray-50"
                                 />
                             </div>
-                        </div>
-
-                        <div className="bg-blue-50 p-3 rounded-lg text-sm text-blue-700 flex gap-2">
-                            <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                            <p>Tips: Gunakan Google Maps untuk mendapatkan koordinat Latitude & Longitude yang akurat.</p>
                         </div>
 
                         <div className="flex justify-end pt-2">
