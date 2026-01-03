@@ -118,8 +118,10 @@ export default function AdminDashboardPage() {
     }, [fetchData]);
 
     const handleLogout = async () => {
-        await fetch('/api/auth/logout', { method: 'POST' });
-        router.push('/login');
+        if (confirm('Apakah Anda yakin ingin keluar dari akun?')) {
+            await fetch('/api/auth/logout', { method: 'POST' });
+            router.push('/login');
+        }
     };
 
 

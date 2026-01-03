@@ -59,8 +59,10 @@ export default function DashboardPage() {
     }, [fetchData]);
 
     const handleLogout = async () => {
-        await fetch('/api/auth/logout', { method: 'POST' });
-        router.push('/login');
+        if (confirm('Apakah Anda yakin ingin keluar dari akun?')) {
+            await fetch('/api/auth/logout', { method: 'POST' });
+            router.push('/login');
+        }
     };
 
     const handleAttendanceSuccess = () => {
@@ -121,8 +123,8 @@ export default function DashboardPage() {
                     <div className="grid grid-cols-2 gap-4">
                         {/* Check In Status */}
                         <div className={`p-4 rounded-xl border-2 transition-all ${todayStatus?.hasCheckedIn
-                                ? 'bg-green-50 border-green-200'
-                                : 'bg-gray-50 border-gray-200'
+                            ? 'bg-green-50 border-green-200'
+                            : 'bg-gray-50 border-gray-200'
                             }`}>
                             <div className="flex items-center gap-2 mb-2">
                                 <CircleDot className={`w-4 h-4 ${todayStatus?.hasCheckedIn ? 'text-green-500' : 'text-gray-400'}`} />
@@ -135,8 +137,8 @@ export default function DashboardPage() {
 
                         {/* Check Out Status */}
                         <div className={`p-4 rounded-xl border-2 transition-all ${todayStatus?.hasCheckedOut
-                                ? 'bg-indigo-50 border-indigo-200'
-                                : 'bg-gray-50 border-gray-200'
+                            ? 'bg-indigo-50 border-indigo-200'
+                            : 'bg-gray-50 border-gray-200'
                             }`}>
                             <div className="flex items-center gap-2 mb-2">
                                 <CircleDot className={`w-4 h-4 ${todayStatus?.hasCheckedOut ? 'text-indigo-500' : 'text-gray-400'}`} />
@@ -152,17 +154,31 @@ export default function DashboardPage() {
                 {/* Action Buttons */}
                 <div className="space-y-4">
                     {!todayStatus?.hasCheckedIn && (
-                        <AttendanceButton
-                            type="checkin"
-                            onSuccess={handleAttendanceSuccess}
-                        />
+                        <>
+                            <div className="bg-teal-50 border border-teal-200 rounded-xl p-4">
+                                <p className="text-teal-800 text-sm text-center">
+                                    👋 <span className="font-medium">Selamat datang!</span> Tekan tombol di bawah ini untuk melakukan <span className="font-semibold">Check In</span> hari ini.
+                                </p>
+                            </div>
+                            <AttendanceButton
+                                type="checkin"
+                                onSuccess={handleAttendanceSuccess}
+                            />
+                        </>
                     )}
 
                     {todayStatus?.hasCheckedIn && !todayStatus?.hasCheckedOut && (
-                        <AttendanceButton
-                            type="checkout"
-                            onSuccess={handleAttendanceSuccess}
-                        />
+                        <>
+                            <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4">
+                                <p className="text-indigo-800 text-sm text-center">
+                                    ✅ Anda sudah <span className="font-semibold">Check In</span>. Jangan lupa <span className="font-semibold">Check Out</span> saat pulang dengan menekan tombol di bawah ini.
+                                </p>
+                            </div>
+                            <AttendanceButton
+                                type="checkout"
+                                onSuccess={handleAttendanceSuccess}
+                            />
+                        </>
                     )}
 
                     {todayStatus?.hasCheckedIn && todayStatus?.hasCheckedOut && (
