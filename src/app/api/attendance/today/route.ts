@@ -14,7 +14,12 @@ export async function GET() {
         }
 
         const supabase = createServerClient();
-        const today = getTodayDate();
+        const today = getTodayDate(); // WIB YYYY-MM-DD
+
+        // Calculate UTC Range for WIB Day
+        // 00:00 WIB = Prev Day 17:00 UTC
+        const wibStart = new Date(`${today}T00:00:00+07:00`);
+        const wibEnd = new Date(`${today}T23:59:59+07:00`);
 
         // Get today's check-in
         const { data: checkin } = await supabase
@@ -22,8 +27,8 @@ export async function GET() {
             .select('*')
             .eq('user_id', session.id)
             .eq('type', 'checkin')
-            .gte('created_at', `${today}T00:00:00`)
-            .lt('created_at', `${today}T23:59:59`)
+            .gte('created_at', wibStart.toISOString())
+            .lte('created_at', wibEnd.toISOString())
             .single();
 
         // Get today's check-out
@@ -32,8 +37,8 @@ export async function GET() {
             .select('*')
             .eq('user_id', session.id)
             .eq('type', 'checkout')
-            .gte('created_at', `${today}T00:00:00`)
-            .lt('created_at', `${today}T23:59:59`)
+            .gte('created_at', wibStart.toISOString())
+            .lte('created_at', wibEnd.toISOString())
             .single();
 
         return NextResponse.json({
