@@ -9,7 +9,7 @@ interface CameraCaptureProps {
 }
 
 export default function CameraCapture({ onCapture, onClose }: CameraCaptureProps) {
-    const videoRef = useRef<HTMLVideoElement>(null);
+    const videoRef = useRef<HTMLVideoElement | null>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [stream, setStream] = useState<MediaStream | null>(null);
     const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
@@ -29,28 +29,27 @@ export default function CameraCapture({ onCapture, onClose }: CameraCaptureProps
         try {
             stopCamera();
 
-            // Check if HTTPS (or localhost)
+            // Check if HTTPS
             if (typeof window !== 'undefined' && location.protocol !== 'https:' && location.hostname !== 'localhost') {
-                throw new Error('Kamera hanya berjalan di HTTPS.');
+                const msg = 'Kamera hanya berjalan di HTTPS. Ganti http:// menjadi https:// di URL bar.';
+                alert(msg); // Aggressive alert for user
+                throw new Error(msg);
             }
 
             const mediaStream = await navigator.mediaDevices.getUserMedia({
                 video: {
                     facingMode,
-                    // Relaxed constraints for better mobile compatibility
+                    // No Strict size constraints to avoid OverconstrainedError on low-end devices
                 },
                 audio: false,
             });
 
-            if (videoRef.current) {
-                videoRef.current.srcObject = mediaStream;
-                // Explicit play attempt for some browsers
-                videoRef.current.play().catch(e => console.warn("Auto-play failed:", e));
-                setStream(mediaStream);
-            }
+            setStream(mediaStream);
         } catch (err) {
             console.error('Camera error:', err);
-            setError(err instanceof Error ? err.message : 'Gagal mengakses kamera. Pastikan izin diberikan.');
+            const msg = err instanceof Error ? err.message : 'Gagal mengakses kamera.';
+            alert(`Camera Error: ${msg} \nCek Permission Browser Anda.`);
+            setError(msg);
         } finally {
             setLoading(false);
         }
@@ -60,7 +59,6 @@ export default function CameraCapture({ onCapture, onClose }: CameraCaptureProps
         if (stream) {
             stream.getTracks().forEach(track => {
                 track.stop();
-                // Ensure track is really stopped
                 track.enabled = false;
             });
             setStream(null);
@@ -90,7 +88,7 @@ export default function CameraCapture({ onCapture, onClose }: CameraCaptureProps
         canvas.toBlob(
             (blob) => {
                 if (blob) {
-                    stopCamera(); // Stop camera immediately after capture
+                    stopCamera();
                     onCapture(blob);
                 }
             },
@@ -125,7 +123,7 @@ export default function CameraCapture({ onCapture, onClose }: CameraCaptureProps
                 </button>
             </div>
 
-            {/* Video Preview Container */}
+            {/* Video Preview */}
             <div className="flex-1 flex items-center justify-center bg-black relative">
                 {loading ? (
                     <div className="flex flex-col items-center gap-3">
@@ -143,27 +141,19 @@ export default function CameraCapture({ onCapture, onClose }: CameraCaptureProps
                         </button>
                     </div>
                 ) : (
-                    <>
-                        <video
-                            ref={(node) => {
-                                videoRef.current = node;
-                                if (node && stream) {
-                                    node.srcObject = stream;
-                                    node.play().catch(e => console.error("Force play error:", e));
-                                }
-                            }}
-                            autoPlay
-                            playsInline
-                            muted
-                            className={`w-full h-full object-cover bg-black ${facingMode === 'user' ? 'scale-x-[-1]' : ''}`}
-                        />
-                        {/* Debug Info (Temporary) */}
-                        <div className="absolute top-20 left-4 text-xs text-green-400 bg-black/50 p-2 rounded pointer-events-none">
-                            <p>Status: {stream ? 'Stream Active' : 'No Stream'}</p>
-                            <p>Tracks: {stream?.getVideoTracks().length || 0}</p>
-                            <p>Facing: {facingMode}</p>
-                        </div>
-                    </>
+                    <video
+                        ref={(node) => {
+                            videoRef.current = node;
+                            if (node && stream) {
+                                node.srcObject = stream;
+                                node.play().catch(e => console.error("Force play error:", e));
+                            }
+                        }}
+                        autoPlay
+                        playsInline
+                        muted
+                        className={`w-full h-full object-cover bg-black ${facingMode === 'user' ? 'scale-x-[-1]' : ''}`}
+                    />
                 )}
             </div>
 
