@@ -27,7 +27,7 @@ export default function HistoryPage() {
             const res = await fetch('/api/attendance/history?limit=50');
             if (res.ok) {
                 const data = await res.json();
-                setRecords(data.records || []);
+                setRecords(data.attendance || []);
             }
         } catch (error) {
             console.error('Error:', error);
@@ -78,8 +78,8 @@ export default function HistoryPage() {
                                 <div className="flex items-start justify-between">
                                     <div className="flex items-center gap-3">
                                         <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${record.type === 'checkin'
-                                                ? 'bg-green-100'
-                                                : 'bg-indigo-100'
+                                            ? 'bg-green-100'
+                                            : 'bg-indigo-100'
                                             }`}>
                                             {record.type === 'checkin' ? (
                                                 <CheckCircle2 className="w-5 h-5 text-green-600" />
@@ -89,8 +89,8 @@ export default function HistoryPage() {
                                         </div>
                                         <div>
                                             <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${record.type === 'checkin'
-                                                    ? 'bg-green-100 text-green-700'
-                                                    : 'bg-indigo-100 text-indigo-700'
+                                                ? 'bg-green-100 text-green-700'
+                                                : 'bg-indigo-100 text-indigo-700'
                                                 }`}>
                                                 {record.type === 'checkin' ? 'Check In' : 'Check Out'}
                                             </span>
