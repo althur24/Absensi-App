@@ -52,7 +52,11 @@ export async function POST(request: Request) {
             );
         }
 
-        const today = getTodayDate();
+        const today = getTodayDate(); // Returns WIB YYYY-MM-DD
+
+        // Calculate UTC Range for WIB Day: 00:00+07 to 23:59+07
+        const wibStart = new Date(`${today}T00:00:00+07:00`);
+        const wibEnd = new Date(`${today}T23:59:59+07:00`);
 
         // Check if already checked in today (must check in before check out)
         const { data: existingCheckin } = await supabase
@@ -60,8 +64,8 @@ export async function POST(request: Request) {
             .select('id')
             .eq('user_id', session.id)
             .eq('type', 'checkin')
-            .gte('created_at', `${today}T00:00:00`)
-            .lt('created_at', `${today}T23:59:59`)
+            .gte('created_at', wibStart.toISOString())
+            .lte('created_at', wibEnd.toISOString())
             .single();
 
         if (!existingCheckin) {
@@ -77,8 +81,8 @@ export async function POST(request: Request) {
             .select('id')
             .eq('user_id', session.id)
             .eq('type', 'checkout')
-            .gte('created_at', `${today}T00:00:00`)
-            .lt('created_at', `${today}T23:59:59`)
+            .gte('created_at', wibStart.toISOString())
+            .lte('created_at', wibEnd.toISOString())
             .single();
 
         if (existingCheckout) {
