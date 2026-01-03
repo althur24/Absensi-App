@@ -29,11 +29,15 @@ export async function GET(request: Request) {
             .order('created_at', { ascending: false })
             .range(offset, offset + limit - 1);
 
-        // Filter by date
+        // Filter by date (Assume WIB / UTC+7 for simplicity)
         if (date) {
+            // Convert selected date (YYYY-MM-DD) to UTC range that covers WIB day
+            // 00:00 WIB = Prev Day 17:00 UTC
+            // 23:59 WIB = Today 16:59 UTC
+            // But easier: send timestamp with offset lets DB handle it
             query = query
-                .gte('created_at', `${date}T00:00:00`)
-                .lt('created_at', `${date}T23:59:59`);
+                .gte('created_at', `${date}T00:00:00+07:00`)
+                .lt('created_at', `${date}T23:59:59+07:00`);
         }
 
         // Filter by user
