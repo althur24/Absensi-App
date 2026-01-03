@@ -20,7 +20,8 @@ import {
     PieChartIcon,
     CalendarOff,
     Settings,
-    FileSpreadsheet
+    FileSpreadsheet,
+    X
 } from 'lucide-react';
 import {
     BarChart,
@@ -87,6 +88,7 @@ export default function AdminDashboardPage() {
     const [data, setData] = useState<DashboardData | null>(null);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<'overview' | 'late' | 'employees'>('overview');
+    const [showLogoutModal, setShowLogoutModal] = useState(false);
 
     const fetchData = useCallback(async () => {
         try {
@@ -117,11 +119,13 @@ export default function AdminDashboardPage() {
         fetchData();
     }, [fetchData]);
 
-    const handleLogout = async () => {
-        if (confirm('Apakah Anda yakin ingin keluar dari akun?')) {
-            await fetch('/api/auth/logout', { method: 'POST' });
-            router.push('/login');
-        }
+    const handleLogout = () => {
+        setShowLogoutModal(true);
+    };
+
+    const confirmLogout = async () => {
+        await fetch('/api/auth/logout', { method: 'POST' });
+        router.push('/login');
     };
 
 
@@ -441,6 +445,50 @@ export default function AdminDashboardPage() {
                     </div>
                 )}
             </main>
+
+            {/* Logout Confirmation Modal */}
+            {showLogoutModal && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+                    <div className="bg-white rounded-2xl w-full max-w-sm shadow-2xl">
+                        <div className="flex items-center justify-between p-4 border-b border-gray-100">
+                            <h2 className="text-lg font-bold text-gray-900">Konfirmasi Logout</h2>
+                            <button
+                                onClick={() => setShowLogoutModal(false)}
+                                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                            >
+                                <X className="w-5 h-5 text-gray-500" />
+                            </button>
+                        </div>
+
+                        <div className="p-6">
+                            <p className="text-gray-700 text-center mb-2">
+                                Apakah Anda yakin ingin keluar dari akun?
+                            </p>
+                            <p className="text-sm text-gray-500 text-center">
+                                Anda perlu login kembali untuk mengakses aplikasi.
+                            </p>
+                        </div>
+
+                        <div className="flex gap-3 p-4 border-t border-gray-100">
+                            <button
+                                type="button"
+                                onClick={() => setShowLogoutModal(false)}
+                                className="flex-1 py-3 border border-gray-200 text-gray-700 font-medium rounded-xl hover:bg-gray-50 transition-colors"
+                            >
+                                Batal
+                            </button>
+                            <button
+                                type="button"
+                                onClick={confirmLogout}
+                                className="flex-1 py-3 bg-red-600 text-white font-medium rounded-xl hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
+                            >
+                                <LogOut className="w-5 h-5" />
+                                Logout
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
