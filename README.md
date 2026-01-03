@@ -1,36 +1,89 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Absensi - Attendance Web App
 
-## Getting Started
+Sistem absensi karyawan dengan foto selfie dan GPS.
 
-First, run the development server:
+## Tech Stack
+
+- **Frontend**: Next.js 14 (App Router), Tailwind CSS
+- **Backend**: Next.js API Routes
+- **Database**: Supabase (PostgreSQL)
+- **Storage**: Supabase Storage
+- **Auth**: Session-based (HTTP-only cookies)
+
+## Setup
+
+### 1. Clone & Install
+
+```bash
+cd ABSENSI/absensi-app
+npm install
+```
+
+### 2. Setup Supabase
+
+1. Buat project baru di [Supabase](https://supabase.com)
+2. Jalankan SQL di `supabase-schema.sql` ke SQL Editor
+3. Buat Storage bucket `attendance-photos` (set to PUBLIC)
+4. Copy URL dan API keys
+
+### 3. Environment Variables
+
+Edit `.env.local`:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://xxxx.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJh...
+SUPABASE_SERVICE_ROLE_KEY=eyJh...
+SESSION_SECRET=your-secret-min-32-characters
+```
+
+### 4. Create Admin User
+
+Generate password hash:
+```bash
+node scripts/generate-hash.js admin123
+```
+
+Kemudian jalankan SQL di Supabase:
+```sql
+INSERT INTO users (name, email, password_hash, role, is_first_login, status) VALUES 
+('Admin', 'admin@company.com', 'HASH_DARI_SCRIPT', 'admin', true, 'active');
+```
+
+### 5. Run Development
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Buka http://localhost:3000
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Default Credentials
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- **Email**: admin@company.com
+- **Password**: admin123
 
-## Learn More
+## Features
 
-To learn more about Next.js, take a look at the following resources:
+### User (Karyawan)
+- ✅ Login / Logout
+- ✅ Ubah password (wajib saat pertama login)
+- ✅ Check In dengan selfie + GPS
+- ✅ Check Out dengan selfie + GPS
+- ✅ Lihat riwayat absensi
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Admin
+- ✅ Dashboard overview hari ini
+- ✅ Kelola user (tambah, edit, nonaktifkan)
+- ✅ Reset password user
+- ✅ Lihat semua absensi dengan filter tanggal
+- ✅ Detail absensi (foto, lokasi, waktu)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Office Location (Dummy)
 
-## Deploy on Vercel
+Default location: Jakarta
+- Latitude: -6.2088
+- Longitude: 106.8456
+- Radius: 300 meter
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Edit di `src/lib/utils.ts` untuk mengubah lokasi kantor.
