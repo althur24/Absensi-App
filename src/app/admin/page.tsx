@@ -215,14 +215,14 @@ export default function AdminDashboardPage() {
                     <div className="bg-white rounded-xl shadow-sm p-4 border border-teal-100">
                         <div className="flex items-center gap-2 mb-2">
                             <Clock className="w-4 h-4 text-teal-500" />
-                            <p className="text-gray-500 text-sm">Rata-rata Masuk</p>
+                            <p className="text-gray-500 text-sm">Rata-rata Masuk (7 Hari)</p>
                         </div>
                         <p className="text-2xl font-bold text-teal-900">{data?.analytics.avgCheckinTime || '--:--'}</p>
                     </div>
                     <div className="bg-white rounded-xl shadow-sm p-4 border border-teal-100">
                         <div className="flex items-center gap-2 mb-2">
                             <Timer className="w-4 h-4 text-teal-500" />
-                            <p className="text-gray-500 text-sm">Rata-rata Durasi</p>
+                            <p className="text-gray-500 text-sm">Rata-rata Durasi (7 Hari)</p>
                         </div>
                         <p className="text-2xl font-bold text-teal-900">{data?.analytics.avgWorkDuration || '--'}</p>
                     </div>

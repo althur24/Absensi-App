@@ -34,38 +34,70 @@ export async function GET(request: Request) {
 
         const validUserIds = new Set(users?.map(u => u.id));
 
-        // Get today's attendance
-        const { data: todayAttendance } = await supabase
+        // Calculate 7 days ago
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6); // Includes today so -6
+        const dateLimitStr = sevenDaysAgo.toISOString().split('T')[0];
+
+        // OPTIMIZED: Fetch all attendance for the last 7 days in one query
+        const { data: recentAttendance } = await supabase
             .from('attendance')
             .select('user_id, type, created_at')
-            .gte('created_at', `${today}T00:00:00`)
-            .lt('created_at', `${today}T23:59:59`);
+            .gte('created_at', `${dateLimitStr}T00:00:00`)
+            .order('created_at', { ascending: true });
 
-        // Process today's stats
-        const userStats: Record<string, { checkin?: string; checkout?: string }> = {};
+        // Process data in memory
+        const todayData: typeof recentAttendance = [];
+        const weeklyStatsMap: Record<string, Record<string, { checkin?: string; checkout?: string }>> = {};
+        // Map<DateString, Map<UserId, {checkin, checkout}>>
 
-        todayAttendance?.forEach(record => {
-            // Skip if user is not in the active employee list (e.g. Admin or Inactive)
+        // Initialize weekly map structure for all 7 days
+        const last7Days: string[] = [];
+        for (let i = 6; i >= 0; i--) {
+            const d = new Date();
+            d.setDate(d.getDate() - i);
+            const dStr = d.toISOString().split('T')[0];
+            last7Days.push(dStr);
+            weeklyStatsMap[dStr] = {};
+        }
+
+        recentAttendance?.forEach(record => {
+            // Skip non-active users (e.g. Admin)
             if (!validUserIds.has(record.user_id)) return;
 
-            if (!userStats[record.user_id]) {
-                userStats[record.user_id] = {};
+            const recordDate = record.created_at.split('T')[0];
+
+            // Filter for Today's specific processing
+            if (recordDate === today) {
+                todayData.push(record);
             }
-            if (record.type === 'checkin') {
-                userStats[record.user_id].checkin = record.created_at;
-            } else {
-                userStats[record.user_id].checkout = record.created_at;
+
+            // Populate Weekly Stats Map
+            if (weeklyStatsMap[recordDate]) {
+                if (!weeklyStatsMap[recordDate][record.user_id]) {
+                    weeklyStatsMap[recordDate][record.user_id] = {};
+                }
+                const dayUserStats = weeklyStatsMap[recordDate][record.user_id];
+
+                if (record.type === 'checkin') {
+                    // Keep earliest checkin if duplicates exist (though UI prevents it, safety net)
+                    if (!dayUserStats.checkin) dayUserStats.checkin = record.created_at;
+                } else {
+                    // Keep latest checkout
+                    dayUserStats.checkout = record.created_at;
+                }
             }
         });
 
-        const checkedIn = Object.values(userStats).filter(s => s.checkin).length;
-        const complete = Object.values(userStats).filter(s => s.checkin && s.checkout).length;
+        // 1. Process Today's Stats (for Cards & List)
+        const todayUserStats = weeklyStatsMap[today] || {};
+        const checkedIn = Object.values(todayUserStats).filter(s => s.checkin).length;
+        const complete = Object.values(todayUserStats).filter(s => s.checkin && s.checkout).length;
         const notCheckedIn = totalUsers - checkedIn;
 
-        // Find late employees (check-in after threshold)
+        // 2. Late Employees (Today)
         const lateEmployees: Array<{ id: string; name: string; email: string; checkin_time: string }> = [];
-
-        Object.entries(userStats).forEach(([userId, stats]) => {
+        Object.entries(todayUserStats).forEach(([userId, stats]) => {
             if (stats.checkin) {
                 const checkinTime = new Date(stats.checkin);
                 const [lateHour, lateMinute] = lateThreshold.split(':').map(Number);
@@ -86,85 +118,62 @@ export async function GET(request: Request) {
             }
         });
 
-        // Get weekly data (last 7 days)
-        const weeklyData: Array<{ date: string; day: string; present: number; absent: number; complete: number }> = [];
-
-        for (let i = 6; i >= 0; i--) {
-            const date = new Date();
-            date.setDate(date.getDate() - i);
-            const dateStr = date.toISOString().split('T')[0];
-            const dayNames = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
-            const dayName = dayNames[date.getDay()];
-
-            const { data: dayAttendance } = await supabase
-                .from('attendance')
-                .select('user_id, type')
-                .gte('created_at', `${dateStr}T00:00:00`)
-                .lt('created_at', `${dateStr}T23:59:59`);
-
-            const dayStats: Record<string, { checkin?: boolean; checkout?: boolean }> = {};
-            dayAttendance?.forEach(record => {
-                // Skip if user is not in the active employee list
-                if (!validUserIds.has(record.user_id)) return;
-
-                if (!dayStats[record.user_id]) {
-                    dayStats[record.user_id] = {};
-                }
-                if (record.type === 'checkin') {
-                    dayStats[record.user_id].checkin = true;
-                } else {
-                    dayStats[record.user_id].checkout = true;
-                }
-            });
-
+        // 3. Weekly Chart Data construction
+        const weeklyData = last7Days.map(dateStr => {
+            const dayStats = weeklyStatsMap[dateStr];
             const dayPresent = Object.keys(dayStats).length;
             const dayComplete = Object.values(dayStats).filter(s => s.checkin && s.checkout).length;
+            const dayDate = new Date(dateStr);
+            const dayNames = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
 
-            weeklyData.push({
+            return {
                 date: dateStr,
-                day: dayName,
+                day: dayNames[dayDate.getDay()],
                 present: dayPresent,
                 absent: totalUsers - dayPresent,
-                complete: dayComplete,
-            });
-        }
-
-        // Calculate average check-in time
-        let avgCheckinMinutes = 0;
-        let checkinCount = 0;
-
-        Object.values(userStats).forEach(stats => {
-            if (stats.checkin) {
-                const time = new Date(stats.checkin);
-                avgCheckinMinutes += time.getHours() * 60 + time.getMinutes();
-                checkinCount++;
-            }
+                complete: dayComplete
+            };
         });
 
-        const avgCheckinTime = checkinCount > 0
-            ? `${String(Math.floor(avgCheckinMinutes / checkinCount / 60)).padStart(2, '0')}:${String(Math.round((avgCheckinMinutes / checkinCount) % 60)).padStart(2, '0')}`
+        // 4. Calculate Averages (Using 7 Days Data) for smoother metrics
+        let totalCheckinMinutes = 0;
+        let totalCheckinCount = 0;
+        let totalDurationMinutes = 0;
+        let totalDurationCount = 0;
+
+        // Iterate over all days in the map
+        Object.values(weeklyStatsMap).forEach(dayUsers => {
+            Object.values(dayUsers).forEach(stats => {
+                // Avg Checkin Time
+                if (stats.checkin) {
+                    const time = new Date(stats.checkin);
+                    totalCheckinMinutes += time.getHours() * 60 + time.getMinutes();
+                    totalCheckinCount++;
+                }
+                // Avg Duration
+                if (stats.checkin && stats.checkout) {
+                    const checkin = new Date(stats.checkin);
+                    const checkout = new Date(stats.checkout);
+                    const durationMins = (checkout.getTime() - checkin.getTime()) / 60000;
+                    if (durationMins > 0) { // Safety check
+                        totalDurationMinutes += durationMins;
+                        totalDurationCount++;
+                    }
+                }
+            });
+        });
+
+        const avgCheckinTime = totalCheckinCount > 0
+            ? `${String(Math.floor(totalCheckinMinutes / totalCheckinCount / 60)).padStart(2, '0')}:${String(Math.round((totalCheckinMinutes / totalCheckinCount) % 60)).padStart(2, '0')}`
             : '--:--';
 
-        // Calculate average work duration
-        let totalDurationMinutes = 0;
-        let durationCount = 0;
-
-        Object.values(userStats).forEach(stats => {
-            if (stats.checkin && stats.checkout) {
-                const checkin = new Date(stats.checkin);
-                const checkout = new Date(stats.checkout);
-                totalDurationMinutes += (checkout.getTime() - checkin.getTime()) / 60000;
-                durationCount++;
-            }
-        });
-
-        const avgWorkDuration = durationCount > 0
-            ? `${Math.floor(totalDurationMinutes / durationCount / 60)}j ${Math.round((totalDurationMinutes / durationCount) % 60)}m`
+        const avgWorkDuration = totalDurationCount > 0
+            ? `${Math.floor(totalDurationMinutes / totalDurationCount / 60)}j ${Math.round((totalDurationMinutes / totalDurationCount) % 60)}m`
             : '--';
 
-        // Create user summary for today
+        // 5. User Summary (Today)
         const summary = users?.map(user => {
-            const stats = userStats[user.id] || {};
+            const stats = todayUserStats[user.id] || {};
             let status: 'not_checked_in' | 'checked_in' | 'complete' = 'not_checked_in';
 
             if (stats.checkin && stats.checkout) {
@@ -183,11 +192,12 @@ export async function GET(request: Request) {
             };
         }) || [];
 
-        // Sort: not checked in first, then checked in, then complete
+        // Sort: not checked in first
         summary.sort((a, b) => {
             const order = { not_checked_in: 0, checked_in: 1, complete: 2 };
             return order[a.status] - order[b.status];
         });
+
 
         return NextResponse.json({
             date: today,
