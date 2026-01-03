@@ -183,6 +183,45 @@ export default function AdminDashboardPage() {
             </header>
 
             <main className="max-w-6xl mx-auto px-4 py-6 space-y-6">
+                {/* Quick Links */}
+                <div className="flex gap-3 flex-wrap">
+                    <a
+                        href="/admin/users"
+                        className="flex items-center gap-2 px-4 py-2.5 bg-white rounded-xl shadow-sm hover:shadow-md border border-teal-100 hover:border-teal-300 transition-all"
+                    >
+                        <Users className="w-5 h-5 text-teal-600" />
+                        <span className="font-medium text-teal-900">Kelola User</span>
+                    </a>
+                    <a
+                        href="/admin/leaves"
+                        className="flex items-center gap-2 px-4 py-2.5 bg-white rounded-xl shadow-sm hover:shadow-md border border-amber-100 hover:border-amber-300 transition-all"
+                    >
+                        <CalendarOff className="w-5 h-5 text-amber-600" />
+                        <span className="font-medium text-teal-900">Kelola Izin</span>
+                    </a>
+                    <a
+                        href="/admin/attendance"
+                        className="flex items-center gap-2 px-4 py-2.5 bg-white rounded-xl shadow-sm hover:shadow-md border border-teal-100 hover:border-teal-300 transition-all"
+                    >
+                        <ClipboardList className="w-5 h-5 text-teal-600" />
+                        <span className="font-medium text-teal-900">Riwayat Absensi</span>
+                    </a>
+                    <a
+                        href="/admin/settings"
+                        className="flex items-center gap-2 px-4 py-2.5 bg-white rounded-xl shadow-sm hover:shadow-md border border-teal-100 hover:border-teal-300 transition-all"
+                    >
+                        <Settings className="w-5 h-5 text-teal-600" />
+                        <span className="font-medium text-teal-900">Pengaturan</span>
+                    </a>
+                    <a
+                        href="/admin/reports"
+                        className="flex items-center gap-2 px-4 py-2.5 bg-white rounded-xl shadow-sm hover:shadow-md border border-green-100 hover:border-green-300 transition-all"
+                    >
+                        <FileSpreadsheet className="w-5 h-5 text-green-600" />
+                        <span className="font-medium text-teal-900">Laporan</span>
+                    </a>
+                </div>
+
                 {/* Stats Cards */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                     <div className="bg-white rounded-xl shadow-sm p-4 border border-teal-100">
@@ -300,45 +339,6 @@ export default function AdminDashboardPage() {
                             </ResponsiveContainer>
                         </div>
                     </div>
-                </div>
-
-                {/* Quick Links */}
-                <div className="flex gap-3 flex-wrap">
-                    <a
-                        href="/admin/users"
-                        className="flex items-center gap-2 px-4 py-2.5 bg-white rounded-xl shadow-sm hover:shadow-md border border-teal-100 hover:border-teal-300 transition-all"
-                    >
-                        <Users className="w-5 h-5 text-teal-600" />
-                        <span className="font-medium text-teal-900">Kelola User</span>
-                    </a>
-                    <a
-                        href="/admin/leaves"
-                        className="flex items-center gap-2 px-4 py-2.5 bg-white rounded-xl shadow-sm hover:shadow-md border border-amber-100 hover:border-amber-300 transition-all"
-                    >
-                        <CalendarOff className="w-5 h-5 text-amber-600" />
-                        <span className="font-medium text-teal-900">Kelola Izin</span>
-                    </a>
-                    <a
-                        href="/admin/attendance"
-                        className="flex items-center gap-2 px-4 py-2.5 bg-white rounded-xl shadow-sm hover:shadow-md border border-teal-100 hover:border-teal-300 transition-all"
-                    >
-                        <ClipboardList className="w-5 h-5 text-teal-600" />
-                        <span className="font-medium text-teal-900">Riwayat Absensi</span>
-                    </a>
-                    <a
-                        href="/admin/settings"
-                        className="flex items-center gap-2 px-4 py-2.5 bg-white rounded-xl shadow-sm hover:shadow-md border border-teal-100 hover:border-teal-300 transition-all"
-                    >
-                        <Settings className="w-5 h-5 text-teal-600" />
-                        <span className="font-medium text-teal-900">Pengaturan</span>
-                    </a>
-                    <a
-                        href="/admin/reports"
-                        className="flex items-center gap-2 px-4 py-2.5 bg-white rounded-xl shadow-sm hover:shadow-md border border-green-100 hover:border-green-300 transition-all"
-                    >
-                        <FileSpreadsheet className="w-5 h-5 text-green-600" />
-                        <span className="font-medium text-teal-900">Laporan</span>
-                    </a>
                 </div>
 
                 {/* Tabs */}
