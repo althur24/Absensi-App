@@ -14,7 +14,7 @@ export default function AttendanceButton({ type, onSuccess }: AttendanceButtonPr
     const [showCamera, setShowCamera] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
-    const { location, error: locationError, loading: locationLoading, refreshLocation } = useLocation();
+    const { location, error: locationError, loading: locationLoading, refresh: refreshLocation } = useLocation();
 
     const handleCapture = async (photoBlob: Blob) => {
         setShowCamera(false);
@@ -22,8 +22,8 @@ export default function AttendanceButton({ type, onSuccess }: AttendanceButtonPr
         setError('');
 
         try {
-            // Refresh location before submitting
-            await refreshLocation();
+            // Trigger refresh location (async via state)
+            refreshLocation();
 
             if (!location) {
                 setError('Gagal mendapatkan lokasi. Pastikan GPS aktif.');
@@ -32,10 +32,10 @@ export default function AttendanceButton({ type, onSuccess }: AttendanceButtonPr
             }
 
             // Upload photo
-            const photoUrl = await uploadPhoto(photoBlob, type);
+            const photoUrl = await uploadPhoto(photoBlob);
 
             // Submit attendance
-            await submitAttendance(type, photoUrl, location);
+            await submitAttendance(type, photoUrl, location.latitude, location.longitude);
 
             onSuccess();
         } catch (err) {
@@ -54,8 +54,8 @@ export default function AttendanceButton({ type, onSuccess }: AttendanceButtonPr
                 onClick={() => setShowCamera(true)}
                 disabled={loading || locationLoading}
                 className={`w-full py-5 rounded-2xl font-semibold text-white flex items-center justify-center gap-3 shadow-lg transition-all disabled:opacity-50 ${isCheckIn
-                        ? 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 shadow-green-500/30'
-                        : 'bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 shadow-indigo-500/30'
+                    ? 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 shadow-green-500/30'
+                    : 'bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 shadow-indigo-500/30'
                     }`}
             >
                 {loading ? (
