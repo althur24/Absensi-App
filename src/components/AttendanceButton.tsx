@@ -16,6 +16,10 @@ interface OfficeConfig {
     name: string;
 }
 
+import dynamic from 'next/dynamic';
+
+const AttendanceMap = dynamic(() => import('./AttendanceMap'), { ssr: false, loading: () => <div className="w-full h-48 bg-gray-100 rounded-2xl animate-pulse" /> });
+
 export default function AttendanceButton({ type, onSuccess }: AttendanceButtonProps) {
     const [showCamera, setShowCamera] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -25,6 +29,9 @@ export default function AttendanceButton({ type, onSuccess }: AttendanceButtonPr
     const [officeConfig, setOfficeConfig] = useState<OfficeConfig | null>(null);
     const [distance, setDistance] = useState<number | null>(null);
     const [isLocationReady, setIsLocationReady] = useState(false);
+
+    // Live Position for Map
+    const [livePos, setLivePos] = useState<{ lat: number; lng: number } | null>(null);
 
     // Existing hook for submission (still needed for precise snapshot)
     const { location, error: locationError, loading: locationLoading, refresh: refreshLocation } = useLocation();
@@ -36,8 +43,10 @@ export default function AttendanceButton({ type, onSuccess }: AttendanceButtonPr
                 const res = await fetch('/api/admin/config');
                 if (res.ok) {
                     const data = await res.json();
-                    if (data.config) {
-                        setOfficeConfig(data.config);
+                    if (data.location) {
+                        setOfficeConfig(data.location);
+                    } else if (data.config) {
+                        setOfficeConfig(data.config); // Fallback
                     }
                 }
             } catch (err) {
@@ -56,13 +65,15 @@ export default function AttendanceButton({ type, onSuccess }: AttendanceButtonPr
         if ('geolocation' in navigator) {
             watchId = navigator.geolocation.watchPosition(
                 (position) => {
+                    const { latitude, longitude } = position.coords;
                     const dist = calculateDistance(
-                        position.coords.latitude,
-                        position.coords.longitude,
+                        latitude,
+                        longitude,
                         officeConfig.latitude,
                         officeConfig.longitude
                     );
                     setDistance(dist);
+                    setLivePos({ lat: latitude, lng: longitude }); // Update Live Pos
                     setIsLocationReady(true);
                 },
                 (err) => {
@@ -92,19 +103,13 @@ export default function AttendanceButton({ type, onSuccess }: AttendanceButtonPr
             refreshLocation();
 
             if (!location) {
-                // If hook location is not ready, try to use last known live location? 
-                // Better stick to strict hook validation for safety.
                 setError('Mengambil lokasi terkini... Coba lagi sebentar.');
                 setLoading(false);
                 return;
             }
 
-            // Double check info distance before submit (Client Side Validation)
+            // Client Side Validation
             if (distance && officeConfig && distance > officeConfig.radius_meters) {
-                // Optional: Block submit here? 
-                // User asked for "Check" text only, but preventing false submit is good UX.
-                // Let's allow submit but warn, or block if strict. 
-                // Backend always validates, so blocking here saves time.
                 throw new Error(`Anda berada di luar jangkauan (${Math.round(distance)}m). Maks: ${officeConfig.radius_meters}m`);
             }
 
@@ -127,7 +132,6 @@ export default function AttendanceButton({ type, onSuccess }: AttendanceButtonPr
 
     // Status Logic
     const isWithinRadius = distance !== null && officeConfig ? distance <= officeConfig.radius_meters : false;
-    const distanceText = distance !== null ? `${Math.round(distance)}m` : '...';
 
     return (
         <>
@@ -152,8 +156,7 @@ export default function AttendanceButton({ type, onSuccess }: AttendanceButtonPr
                 )}
             </button>
 
-            {/* Location Status & Distance Indicator */}
-            {/* Premium Location Status & Distance Indicator */}
+            {/* Location Status */}
             <div className="mt-4 flex flex-col items-center gap-2">
                 {!officeConfig ? (
                     <span className="text-sm text-gray-500 flex items-center gap-1.5 animate-pulse">
@@ -167,8 +170,8 @@ export default function AttendanceButton({ type, onSuccess }: AttendanceButtonPr
                     </span>
                 ) : (
                     <div className={`flex items-center gap-2.5 px-5 py-3 rounded-2xl text-sm font-semibold border shadow-sm transition-all duration-300 ${isWithinRadius
-                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200 shadow-emerald-100'
-                            : 'bg-rose-50 text-rose-700 border-rose-200 shadow-rose-100'
+                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200 shadow-emerald-100'
+                        : 'bg-rose-50 text-rose-700 border-rose-200 shadow-rose-100'
                         }`}>
                         {isWithinRadius ? (
                             <MapPinCheck className="w-5 h-5 flex-shrink-0" strokeWidth={2} />
@@ -183,21 +186,26 @@ export default function AttendanceButton({ type, onSuccess }: AttendanceButtonPr
                         </span>
                     </div>
                 )}
-
-                {/* Additional Accuracy Info (Subtle) */}
-                {location && (
-                    <span className="text-[10px] text-gray-400 font-medium flex items-center gap-1">
-                        <MapPin className="w-3 h-3" />
-                        Akurasi GPS: ±{Math.round(location.accuracy)} meter
-                    </span>
-                )}
             </div>
 
-            {/* Error Message */}
+            {/* ERROR Message */}
             {error && (
-                <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 flex items-center gap-2 animate-in slide-in-from-top-2">
+                <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 flex items-center gap-2 animate-in slide-in-from-top-2 mx-auto max-w-sm">
                     <AlertCircle className="w-4 h-4 flex-shrink-0" />
                     {error}
+                </div>
+            )}
+
+            {/* Interactive Map (Restored) */}
+            {officeConfig && (
+                <div className="mt-6 w-full">
+                    <AttendanceMap
+                        officeLat={officeConfig.latitude}
+                        officeLng={officeConfig.longitude}
+                        officeRadius={officeConfig.radius_meters}
+                        userLat={livePos?.lat ?? null}
+                        userLng={livePos?.lng ?? null}
+                    />
                 </div>
             )}
 
