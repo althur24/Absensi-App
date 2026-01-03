@@ -25,8 +25,6 @@ export async function GET(request: Request) {
             .order('created_at', { ascending: false })
             .range(offset, offset + limit - 1);
 
-        console.log(`[History Debug] User: ${session.id}, Count: ${attendance?.length}, Total: ${count}`);
-
         if (error) {
             console.error('[History Error]', error);
             throw error;

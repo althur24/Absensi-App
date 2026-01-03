@@ -71,8 +71,6 @@ export async function POST(request: Request) {
             );
         }
 
-        console.log('[CheckIn Debug] Payload:', { user_id: session.id, latitude, longitude });
-
         // Create attendance record
         const { data: attendance, error } = await supabase
             .from('attendance')
@@ -92,8 +90,6 @@ export async function POST(request: Request) {
             console.error('[CheckIn Error] Insert failed:', error);
             throw error;
         }
-
-        console.log('[CheckIn Check] Success! New ID:', attendance?.id);
 
         return NextResponse.json({
             success: true,
