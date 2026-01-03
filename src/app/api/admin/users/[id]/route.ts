@@ -70,7 +70,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     }
 }
 
-// Delete user (admin only) - soft delete by setting status to inactive
+// Delete user (admin only) - HARD DELETE (Removes user and cascade deletes related data)
 export async function DELETE(request: Request, { params }: RouteParams) {
     try {
         const session = await getSession();
@@ -95,7 +95,7 @@ export async function DELETE(request: Request, { params }: RouteParams) {
 
         const { error } = await supabase
             .from('users')
-            .update({ status: 'inactive' })
+            .delete()
             .eq('id', id);
 
         if (error) {
@@ -104,7 +104,7 @@ export async function DELETE(request: Request, { params }: RouteParams) {
 
         return NextResponse.json({
             success: true,
-            message: 'User berhasil dinonaktifkan',
+            message: 'User berhasil dihapus permanen',
         });
     } catch (error) {
         console.error('Delete user error:', error);

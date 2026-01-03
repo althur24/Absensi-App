@@ -16,7 +16,9 @@ import {
     Loader2,
     Mail,
     User as UserIcon,
-    Shield
+    Shield,
+    Trash2,
+    AlertTriangle
 } from 'lucide-react';
 
 export default function AdminUsersPage() {
@@ -24,9 +26,12 @@ export default function AdminUsersPage() {
     const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [userToDelete, setUserToDelete] = useState<User | null>(null);
     const [editingUser, setEditingUser] = useState<User | null>(null);
     const [formData, setFormData] = useState({ name: '', email: '', password: '', role: 'user' });
     const [saving, setSaving] = useState(false);
+    const [deleting, setDeleting] = useState(false);
     const [message, setMessage] = useState({ type: '', text: '' });
 
     useEffect(() => {
@@ -100,6 +105,10 @@ export default function AdminUsersPage() {
     };
 
     const handleResetPassword = async (userId: string) => {
+        if (!confirm('Apakah Anda yakin ingin mereset password user ini? User akan diminta mengganti password saat login berikutnya.')) {
+            return;
+        }
+
         const newPassword = prompt('Masukkan password baru:');
         if (!newPassword) return;
 
@@ -123,6 +132,11 @@ export default function AdminUsersPage() {
 
     const handleToggleStatus = async (user: User) => {
         const newStatus = user.status === 'active' ? 'inactive' : 'active';
+        const action = newStatus === 'active' ? 'mengaktifkan' : 'menonaktifkan';
+
+        if (!confirm(`Apakah Anda yakin ingin ${action} user "${user.name}"?`)) {
+            return;
+        }
 
         try {
             const res = await fetch(`/api/admin/users/${user.id}`, {
@@ -137,6 +151,38 @@ export default function AdminUsersPage() {
             }
         } catch {
             setMessage({ type: 'error', text: 'Gagal mengubah status' });
+        }
+    };
+
+    const openDeleteModal = (user: User) => {
+        setUserToDelete(user);
+        setShowDeleteModal(true);
+    };
+
+    const handleDelete = async () => {
+        if (!userToDelete) return;
+
+        setDeleting(true);
+        setMessage({ type: '', text: '' });
+
+        try {
+            const res = await fetch(`/api/admin/users/${userToDelete.id}`, {
+                method: 'DELETE',
+            });
+
+            if (res.ok) {
+                setShowDeleteModal(false);
+                setUserToDelete(null);
+                fetchUsers();
+                setMessage({ type: 'success', text: 'User berhasil dihapus permanen' });
+            } else {
+                const data = await res.json();
+                setMessage({ type: 'error', text: data.error });
+            }
+        } catch {
+            setMessage({ type: 'error', text: 'Gagal menghapus user' });
+        } finally {
+            setDeleting(false);
         }
     };
 
@@ -179,8 +225,8 @@ export default function AdminUsersPage() {
                 {/* Message */}
                 {message.text && (
                     <div className={`mb-4 p-4 rounded-xl text-sm border ${message.type === 'success'
-                            ? 'bg-green-50 text-green-700 border-green-200'
-                            : 'bg-red-50 text-red-700 border-red-200'
+                        ? 'bg-green-50 text-green-700 border-green-200'
+                        : 'bg-red-50 text-red-700 border-red-200'
                         }`}>
                         {message.text}
                     </div>
@@ -211,8 +257,8 @@ export default function AdminUsersPage() {
                                         <td className="px-4 py-3 text-gray-600 hidden sm:table-cell">{user.email}</td>
                                         <td className="px-4 py-3">
                                             <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${user.role === 'admin'
-                                                    ? 'bg-indigo-100 text-indigo-700'
-                                                    : 'bg-gray-100 text-gray-700'
+                                                ? 'bg-indigo-100 text-indigo-700'
+                                                : 'bg-gray-100 text-gray-700'
                                                 }`}>
                                                 <Shield className="w-3 h-3" />
                                                 {user.role}
@@ -220,8 +266,8 @@ export default function AdminUsersPage() {
                                         </td>
                                         <td className="px-4 py-3">
                                             <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${user.status === 'active'
-                                                    ? 'bg-green-100 text-green-700'
-                                                    : 'bg-red-100 text-red-700'
+                                                ? 'bg-green-100 text-green-700'
+                                                : 'bg-red-100 text-red-700'
                                                 }`}>
                                                 {user.status === 'active' ? 'Aktif' : 'Nonaktif'}
                                             </span>
@@ -245,8 +291,8 @@ export default function AdminUsersPage() {
                                                 <button
                                                     onClick={() => handleToggleStatus(user)}
                                                     className={`p-2 rounded-lg transition-colors ${user.status === 'active'
-                                                            ? 'hover:bg-red-100'
-                                                            : 'hover:bg-green-100'
+                                                        ? 'hover:bg-red-100'
+                                                        : 'hover:bg-green-100'
                                                         }`}
                                                     title={user.status === 'active' ? 'Nonaktifkan' : 'Aktifkan'}
                                                 >
@@ -255,6 +301,13 @@ export default function AdminUsersPage() {
                                                     ) : (
                                                         <UserCheck className="w-4 h-4 text-green-600" />
                                                     )}
+                                                </button>
+                                                <button
+                                                    onClick={() => openDeleteModal(user)}
+                                                    className="p-2 hover:bg-red-100 rounded-lg transition-colors"
+                                                    title="Hapus User"
+                                                >
+                                                    <Trash2 className="w-4 h-4 text-red-600" />
                                                 </button>
                                             </div>
                                         </td>
@@ -372,6 +425,76 @@ export default function AdminUsersPage() {
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Delete Confirmation Modal */}
+            {showDeleteModal && userToDelete && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+                    <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl">
+                        <div className="flex items-center justify-between p-4 border-b border-red-100 bg-red-50">
+                            <div className="flex items-center gap-2">
+                                <AlertTriangle className="w-5 h-5 text-red-600" />
+                                <h2 className="text-lg font-bold text-red-900">Konfirmasi Hapus User</h2>
+                            </div>
+                            <button
+                                onClick={() => setShowDeleteModal(false)}
+                                className="p-2 hover:bg-red-100 rounded-lg transition-colors"
+                            >
+                                <X className="w-5 h-5 text-gray-500" />
+                            </button>
+                        </div>
+
+                        <div className="p-6 space-y-4">
+                            <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+                                <p className="text-red-800 font-medium mb-2">
+                                    ⚠️ Peringatan: Tindakan ini tidak dapat dibatalkan!
+                                </p>
+                                <p className="text-red-700 text-sm">
+                                    Semua data terkait user ini (absensi, izin, dll) akan dihapus permanen.
+                                </p>
+                            </div>
+
+                            <div className="bg-gray-50 rounded-xl p-4">
+                                <p className="text-sm text-gray-600 mb-1">Anda akan menghapus:</p>
+                                <p className="font-bold text-gray-900">{userToDelete.name}</p>
+                                <p className="text-sm text-gray-600">{userToDelete.email}</p>
+                            </div>
+
+                            <p className="text-gray-700 text-sm">
+                                Apakah Anda yakin ingin menghapus user ini?
+                            </p>
+                        </div>
+
+                        <div className="flex gap-3 p-4 border-t border-gray-100">
+                            <button
+                                type="button"
+                                onClick={() => setShowDeleteModal(false)}
+                                disabled={deleting}
+                                className="flex-1 py-3 border border-gray-200 text-gray-700 font-medium rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-50"
+                            >
+                                Batal
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleDelete}
+                                disabled={deleting}
+                                className="flex-1 py-3 bg-red-600 text-white font-medium rounded-xl hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                            >
+                                {deleting ? (
+                                    <>
+                                        <Loader2 className="w-5 h-5 animate-spin" />
+                                        Menghapus...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Trash2 className="w-5 h-5" />
+                                        Hapus Permanen
+                                    </>
+                                )}
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
