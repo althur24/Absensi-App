@@ -173,9 +173,18 @@ export async function GET(request: Request) {
             ? `${String(Math.floor(totalCheckinMinutes / totalCheckinCount / 60)).padStart(2, '0')}:${String(Math.round((totalCheckinMinutes / totalCheckinCount) % 60)).padStart(2, '0')}`
             : '--:--';
 
-        const avgWorkDuration = totalDurationCount > 0
-            ? `${Math.floor(totalDurationMinutes / totalDurationCount / 60)}j ${Math.round((totalDurationMinutes / totalDurationCount) % 60)}m`
-            : '--';
+        let avgWorkDuration = '--';
+        if (totalDurationCount > 0) {
+            const avgMins = totalDurationMinutes / totalDurationCount;
+            const hours = Math.floor(avgMins / 60);
+            const minutes = Math.round(avgMins % 60);
+
+            if (hours > 0) {
+                avgWorkDuration = `${hours}j ${minutes}m`;
+            } else {
+                avgWorkDuration = `${minutes}m`;
+            }
+        }
 
         // 5. User Summary
         const summary = users?.map(user => {
