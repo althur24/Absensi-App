@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import CameraCapture from './CameraCapture';
 import { useLocation, uploadPhoto, submitAttendance } from './AttendanceUtils';
-import { Camera, MapPin, CheckCircle2, LogOut, Loader2, AlertCircle, XCircle } from 'lucide-react';
+import { Camera, MapPin, CheckCircle2, LogOut, Loader2, AlertCircle, XCircle, MapPinCheck, MapPinX } from 'lucide-react';
 import { calculateDistance } from '@/lib/utils';
 
 interface AttendanceButtonProps {
@@ -153,31 +153,32 @@ export default function AttendanceButton({ type, onSuccess }: AttendanceButtonPr
             </button>
 
             {/* Location Status & Distance Indicator */}
-            <div className="mt-3 flex flex-col items-center gap-2">
+            {/* Premium Location Status & Distance Indicator */}
+            <div className="mt-4 flex flex-col items-center gap-2">
                 {!officeConfig ? (
-                    <span className="text-sm text-gray-500 flex items-center gap-1">
-                        <Loader2 className="w-3 h-3 animate-spin" />
+                    <span className="text-sm text-gray-500 flex items-center gap-1.5 animate-pulse">
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
                         Memuat konfigurasi kantor...
                     </span>
                 ) : !isLocationReady ? (
-                    <span className="text-sm text-gray-500 flex items-center gap-1">
-                        <Loader2 className="w-3 h-3 animate-spin" />
+                    <span className="text-sm text-gray-500 flex items-center gap-1.5 animate-pulse">
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
                         Mencari sinyal GPS...
                     </span>
                 ) : (
-                    <div className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border ${isWithinRadius
-                            ? 'bg-green-50 text-green-700 border-green-200'
-                            : 'bg-red-50 text-red-700 border-red-200'
+                    <div className={`flex items-center gap-2.5 px-5 py-3 rounded-2xl text-sm font-semibold border shadow-sm transition-all duration-300 ${isWithinRadius
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200 shadow-emerald-100'
+                            : 'bg-rose-50 text-rose-700 border-rose-200 shadow-rose-100'
                         }`}>
                         {isWithinRadius ? (
-                            <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+                            <MapPinCheck className="w-5 h-5 flex-shrink-0" strokeWidth={2} />
                         ) : (
-                            <XCircle className="w-4 h-4 flex-shrink-0" />
+                            <MapPinX className="w-5 h-5 flex-shrink-0" strokeWidth={2} />
                         )}
-                        <span>
+                        <span className="tracking-wide">
                             {isWithinRadius
-                                ? `Di Dalam Area Absen (Jarak: ${distanceText})`
-                                : `Di Luar Area Absen (Jarak: ${distanceText})`
+                                ? `Dalam Area (±${Math.round(distance || 0)}m)`
+                                : `Luar Jangkauan (±${Math.round(distance || 0)}m)`
                             }
                         </span>
                     </div>
@@ -185,9 +186,9 @@ export default function AttendanceButton({ type, onSuccess }: AttendanceButtonPr
 
                 {/* Additional Accuracy Info (Subtle) */}
                 {location && (
-                    <span className="text-xs text-gray-400 flex items-center gap-1">
+                    <span className="text-[10px] text-gray-400 font-medium flex items-center gap-1">
                         <MapPin className="w-3 h-3" />
-                        Akurasi GPS: ±{Math.round(location.accuracy)}m
+                        Akurasi GPS: ±{Math.round(location.accuracy)} meter
                     </span>
                 )}
             </div>
