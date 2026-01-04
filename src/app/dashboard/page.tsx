@@ -14,7 +14,8 @@ import {
     History,
     Settings,
     X,
-    MapPin
+    MapPin,
+    Loader2
 } from 'lucide-react';
 
 export default function DashboardPage() {
@@ -134,6 +135,30 @@ export default function DashboardPage() {
     const confirmLogout = async () => {
         await fetch('/api/auth/logout', { method: 'POST' });
         router.push('/login');
+    };
+
+    const [requestingGps, setRequestingGps] = useState(false);
+
+    const requestGpsPermission = () => {
+        setRequestingGps(true);
+        navigator.geolocation.getCurrentPosition(
+            () => {
+                // Success - GPS permission granted
+                setGpsStatus('enabled');
+                setShowGpsModal(false);
+                setRequestingGps(false);
+            },
+            (error) => {
+                setRequestingGps(false);
+                if (error.code === error.PERMISSION_DENIED) {
+                    // Show alert with instructions for denied permission
+                    alert('Izin lokasi ditolak oleh browser.\n\nUntuk mengaktifkan:\n1. Klik ikon gembok/info di sebelah kiri alamat website\n2. Pilih "Izin situs" atau "Site settings"\n3. Ubah "Lokasi" menjadi "Izinkan"\n4. Refresh halaman');
+                } else {
+                    alert('Gagal mendapatkan lokasi. Pastikan GPS HP sudah aktif.');
+                }
+            },
+            { enableHighAccuracy: true, timeout: 10000 }
+        );
     };
 
     const handleAttendanceSuccess = () => {
@@ -374,21 +399,43 @@ export default function DashboardPage() {
                             </div>
                         </div>
 
-                        <div className="flex gap-3 p-4 border-t border-gray-100">
+                        <div className="flex flex-col gap-3 p-4 border-t border-gray-100">
+                            {/* Request Permission Button */}
                             <button
                                 type="button"
-                                onClick={() => setShowGpsModal(false)}
-                                className="flex-1 py-3 border border-gray-200 text-gray-700 font-medium rounded-xl hover:bg-gray-50 transition-colors"
+                                onClick={requestGpsPermission}
+                                disabled={requestingGps}
+                                className="w-full py-3 bg-teal-600 text-white font-medium rounded-xl hover:bg-teal-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
                             >
-                                Tutup
+                                {requestingGps ? (
+                                    <>
+                                        <Loader2 className="w-5 h-5 animate-spin" />
+                                        Meminta Izin...
+                                    </>
+                                ) : (
+                                    <>
+                                        <MapPin className="w-5 h-5" />
+                                        Minta Izin Lokasi
+                                    </>
+                                )}
                             </button>
-                            <button
-                                type="button"
-                                onClick={() => window.location.reload()}
-                                className="flex-1 py-3 bg-amber-600 text-white font-medium rounded-xl hover:bg-amber-700 transition-colors flex items-center justify-center gap-2"
-                            >
-                                Refresh
-                            </button>
+
+                            <div className="flex gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowGpsModal(false)}
+                                    className="flex-1 py-3 border border-gray-200 text-gray-700 font-medium rounded-xl hover:bg-gray-50 transition-colors"
+                                >
+                                    Tutup
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => window.location.reload()}
+                                    className="flex-1 py-3 bg-amber-600 text-white font-medium rounded-xl hover:bg-amber-700 transition-colors"
+                                >
+                                    Refresh
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
