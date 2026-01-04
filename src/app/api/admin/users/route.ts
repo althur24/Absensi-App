@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { createServerClient } from '@/lib/supabase';
 import { getSession } from '@/lib/session';
+import { logAdminAction } from '@/lib/adminLog';
 
 // Get all users (admin only)
 export async function GET() {
@@ -99,6 +100,12 @@ export async function POST(request: Request) {
         if (error) {
             throw error;
         }
+
+        // Log admin action
+        await logAdminAction(session.id, session.name, 'user_create', {
+            user_name: name,
+            user_email: email,
+        });
 
         return NextResponse.json({
             success: true,

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { createServerClient } from '@/lib/supabase';
 import { getSession } from '@/lib/session';
+import { logAdminAction } from '@/lib/adminLog';
 
 interface RouteParams {
     params: Promise<{ id: string }>;
@@ -56,6 +57,24 @@ export async function PATCH(request: Request, { params }: RouteParams) {
             throw error;
         }
 
+        // Log admin action
+        if (body.password) {
+            await logAdminAction(session.id, session.name, 'user_reset_password', {
+                user_name: user.name,
+                user_email: user.email,
+            });
+        } else if (body.status) {
+            await logAdminAction(session.id, session.name, 'user_toggle_status', {
+                user_name: user.name,
+                new_status: user.status,
+            });
+        } else {
+            await logAdminAction(session.id, session.name, 'user_update', {
+                user_name: user.name,
+                user_email: user.email,
+            });
+        }
+
         return NextResponse.json({
             success: true,
             message: 'User berhasil diupdate',
@@ -101,6 +120,11 @@ export async function DELETE(request: Request, { params }: RouteParams) {
         if (error) {
             throw error;
         }
+
+        // Log admin action (we need to get user info before delete, so pass id)
+        await logAdminAction(session.id, session.name, 'user_delete', {
+            deleted_user_id: id,
+        });
 
         return NextResponse.json({
             success: true,

@@ -21,7 +21,8 @@ import {
     CalendarOff,
     Settings,
     FileSpreadsheet,
-    X
+    X,
+    History
 } from 'lucide-react';
 import {
     BarChart,
@@ -90,6 +91,13 @@ export default function AdminDashboardPage() {
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<'overview' | 'late' | 'employees'>('overview');
     const [showLogoutModal, setShowLogoutModal] = useState(false);
+    const [activityLogs, setActivityLogs] = useState<Array<{
+        id: string;
+        admin_name: string;
+        action: string;
+        details: Record<string, unknown>;
+        created_at: string;
+    }>>([]);
 
     const fetchData = useCallback(async () => {
         try {
@@ -108,6 +116,13 @@ export default function AdminDashboardPage() {
             if (dashRes.ok) {
                 const dashData = await dashRes.json();
                 setData(dashData);
+            }
+
+            // Fetch activity logs
+            const logsRes = await fetch('/api/admin/logs?limit=10');
+            if (logsRes.ok) {
+                const logsData = await logsRes.json();
+                setActivityLogs(logsData.logs || []);
             }
         } catch (error) {
             console.error('Error:', error);
@@ -447,6 +462,60 @@ export default function AdminDashboardPage() {
                         </div>
                     </div>
                 )}
+
+                {/* Activity Log Section */}
+                <div className="bg-white rounded-xl shadow-sm border border-teal-100 mt-6">
+                    <div className="px-4 py-3 border-b border-teal-100 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <History className="w-5 h-5 text-teal-600" />
+                            <h3 className="font-semibold text-teal-900">Aktivitas Admin Terbaru</h3>
+                        </div>
+                    </div>
+                    <div className="divide-y divide-teal-50 max-h-64 overflow-y-auto">
+                        {activityLogs.length === 0 ? (
+                            <div className="p-8 text-center text-gray-500">
+                                <History className="w-12 h-12 text-teal-200 mx-auto mb-3" />
+                                <p>Belum ada aktivitas tercatat</p>
+                            </div>
+                        ) : (
+                            activityLogs.map((log) => {
+                                const actionLabels: Record<string, string> = {
+                                    user_create: 'Menambah User Baru',
+                                    user_update: 'Mengubah Data User',
+                                    user_delete: 'Menghapus User',
+                                    user_reset_password: 'Reset Kata Kunci',
+                                    user_toggle_status: 'Ubah Status User',
+                                    config_update_location: 'Ubah Lokasi Kantor',
+                                    config_update_hours: 'Ubah Jam Kerja',
+                                    leave_approve: 'Setujui Izin',
+                                    leave_reject: 'Tolak Izin',
+                                };
+                                const logTime = new Date(log.created_at).toLocaleString('id-ID', {
+                                    timeZone: 'Asia/Jakarta',
+                                    day: '2-digit',
+                                    month: 'short',
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                });
+                                const details = log.details as Record<string, string>;
+                                return (
+                                    <div key={log.id} className="px-4 py-3 hover:bg-teal-50/50 transition-colors">
+                                        <div className="flex items-start justify-between">
+                                            <div>
+                                                <p className="font-medium text-gray-900">{log.admin_name}</p>
+                                                <p className="text-sm text-teal-600">{actionLabels[log.action] || log.action}</p>
+                                                {details?.user_name && (
+                                                    <p className="text-xs text-gray-500 mt-1">User: {details.user_name}</p>
+                                                )}
+                                            </div>
+                                            <span className="text-xs text-gray-400">{logTime}</span>
+                                        </div>
+                                    </div>
+                                );
+                            })
+                        )}
+                    </div>
+                </div>
             </main>
 
             {/* Logout Confirmation Modal */}

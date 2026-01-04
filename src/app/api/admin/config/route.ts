@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase';
 import { getSession } from '@/lib/session';
+import { logAdminAction } from '@/lib/adminLog';
 
 // Get office config & work hours
 export async function GET() {
@@ -94,6 +95,12 @@ export async function POST(request: Request) {
             });
 
             if (error) throw error;
+
+            await logAdminAction(session.id, session.name, 'config_update_location', {
+                name: value.name,
+                radius: value.radius_meters,
+            });
+
             return NextResponse.json({ success: true, message: 'Lokasi berhasil disimpan' });
         }
 
@@ -115,6 +122,13 @@ export async function POST(request: Request) {
             });
 
             if (error) throw error;
+
+            await logAdminAction(session.id, session.name, 'config_update_hours', {
+                checkin_start: value.checkin_start,
+                checkin_end: value.checkin_end,
+                late_threshold: value.late_threshold,
+            });
+
             return NextResponse.json({ success: true, message: 'Jam kerja berhasil disimpan' });
         }
 
