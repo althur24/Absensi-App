@@ -13,7 +13,8 @@ import {
     CircleDot,
     History,
     Settings,
-    X
+    X,
+    MapPin
 } from 'lucide-react';
 
 export default function DashboardPage() {
@@ -27,6 +28,8 @@ export default function DashboardPage() {
     } | null>(null);
     const [loading, setLoading] = useState(true);
     const [showLogoutModal, setShowLogoutModal] = useState(false);
+    const [showGpsModal, setShowGpsModal] = useState(false);
+    const [gpsStatus, setGpsStatus] = useState<'checking' | 'enabled' | 'disabled' | 'denied'>('checking');
 
     const fetchData = useCallback(async () => {
         try {
@@ -59,6 +62,70 @@ export default function DashboardPage() {
     useEffect(() => {
         fetchData();
     }, [fetchData]);
+
+    // Check GPS status on mount
+    useEffect(() => {
+        const checkGps = async () => {
+            if (!navigator.geolocation) {
+                setGpsStatus('disabled');
+                setShowGpsModal(true);
+                return;
+            }
+
+            try {
+                const permission = await navigator.permissions.query({ name: 'geolocation' });
+
+                if (permission.state === 'denied') {
+                    setGpsStatus('denied');
+                    setShowGpsModal(true);
+                } else if (permission.state === 'prompt') {
+                    // Try to get location to trigger permission prompt
+                    navigator.geolocation.getCurrentPosition(
+                        () => setGpsStatus('enabled'),
+                        (error) => {
+                            if (error.code === error.PERMISSION_DENIED) {
+                                setGpsStatus('denied');
+                                setShowGpsModal(true);
+                            } else {
+                                setGpsStatus('disabled');
+                                setShowGpsModal(true);
+                            }
+                        },
+                        { timeout: 5000 }
+                    );
+                } else {
+                    setGpsStatus('enabled');
+                }
+
+                // Listen for permission changes
+                permission.onchange = () => {
+                    if (permission.state === 'granted') {
+                        setGpsStatus('enabled');
+                        setShowGpsModal(false);
+                    } else if (permission.state === 'denied') {
+                        setGpsStatus('denied');
+                        setShowGpsModal(true);
+                    }
+                };
+            } catch {
+                // Fallback for browsers that don't support permissions API
+                navigator.geolocation.getCurrentPosition(
+                    () => setGpsStatus('enabled'),
+                    (error) => {
+                        if (error.code === error.PERMISSION_DENIED) {
+                            setGpsStatus('denied');
+                        } else {
+                            setGpsStatus('disabled');
+                        }
+                        setShowGpsModal(true);
+                    },
+                    { timeout: 5000 }
+                );
+            }
+        };
+
+        checkGps();
+    }, []);
 
     const handleLogout = () => {
         setShowLogoutModal(true);
@@ -257,6 +324,70 @@ export default function DashboardPage() {
                             >
                                 <LogOut className="w-5 h-5" />
                                 Logout
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* GPS Activation Modal */}
+            {showGpsModal && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+                    <div className="bg-white rounded-2xl w-full max-w-sm shadow-2xl">
+                        <div className="flex items-center justify-between p-4 border-b border-amber-100 bg-amber-50">
+                            <div className="flex items-center gap-2">
+                                <MapPin className="w-5 h-5 text-amber-600" />
+                                <h2 className="text-lg font-bold text-amber-900">Aktifkan GPS</h2>
+                            </div>
+                            <button
+                                onClick={() => setShowGpsModal(false)}
+                                className="p-2 hover:bg-amber-100 rounded-lg transition-colors"
+                            >
+                                <X className="w-5 h-5 text-gray-500" />
+                            </button>
+                        </div>
+
+                        <div className="p-6 space-y-4">
+                            <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto">
+                                <MapPin className="w-8 h-8 text-amber-600" />
+                            </div>
+
+                            <div className="text-center">
+                                <p className="text-gray-800 font-medium mb-2">
+                                    {gpsStatus === 'denied'
+                                        ? 'Izin lokasi ditolak!'
+                                        : 'GPS tidak aktif!'}
+                                </p>
+                                <p className="text-gray-600 text-sm">
+                                    Aplikasi ini memerlukan akses lokasi untuk melakukan absensi. Silakan aktifkan GPS dan izinkan akses lokasi.
+                                </p>
+                            </div>
+
+                            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+                                <p className="text-amber-800 text-sm font-medium mb-2">📱 Cara Mengaktifkan:</p>
+                                <ol className="text-amber-700 text-sm space-y-1 list-decimal list-inside">
+                                    <li>Buka <span className="font-medium">Pengaturan</span> HP Anda</li>
+                                    <li>Pilih <span className="font-medium">Lokasi / GPS</span></li>
+                                    <li>Aktifkan toggle <span className="font-medium">Lokasi</span></li>
+                                    <li>Kembali ke aplikasi dan <span className="font-medium">refresh halaman</span></li>
+                                </ol>
+                            </div>
+                        </div>
+
+                        <div className="flex gap-3 p-4 border-t border-gray-100">
+                            <button
+                                type="button"
+                                onClick={() => setShowGpsModal(false)}
+                                className="flex-1 py-3 border border-gray-200 text-gray-700 font-medium rounded-xl hover:bg-gray-50 transition-colors"
+                            >
+                                Tutup
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => window.location.reload()}
+                                className="flex-1 py-3 bg-amber-600 text-white font-medium rounded-xl hover:bg-amber-700 transition-colors flex items-center justify-center gap-2"
+                            >
+                                Refresh
                             </button>
                         </div>
                     </div>
