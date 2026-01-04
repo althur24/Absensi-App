@@ -51,6 +51,7 @@ interface WeeklyData {
     date: string;
     day: string;
     present: number;
+    on_leave: number;
     absent: number;
     complete: number;
 }
@@ -309,7 +310,9 @@ export default function AdminDashboardPage() {
                                             borderRadius: '8px'
                                         }}
                                     />
+                                    <Legend wrapperStyle={{ paddingTop: '10px' }} />
                                     <Bar dataKey="present" name="Hadir" fill="#14B8A6" radius={[4, 4, 0, 0]} />
+                                    <Bar dataKey="on_leave" name="Izin" fill="#6366F1" radius={[4, 4, 0, 0]} />
                                     <Bar dataKey="absent" name="Tidak Hadir" fill="#F87171" radius={[4, 4, 0, 0]} />
                                 </BarChart>
                             </ResponsiveContainer>

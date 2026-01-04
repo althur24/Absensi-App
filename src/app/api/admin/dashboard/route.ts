@@ -97,6 +97,12 @@ export async function GET(request: Request) {
             .select('user_id, type, reason')
             .eq('date', today);
 
+        // Fetch leaves for last 7 days (for weekly chart)
+        const { data: weeklyLeaves } = await supabase
+            .from('leaves')
+            .select('user_id, date, type')
+            .in('date', last7Days);
+
         // 1. Process Today's Stats
         const todayUserStats = weeklyStatsMap[today] || {};
         const checkedIn = Object.values(todayUserStats).filter(s => s.checkin).length;
@@ -134,6 +140,11 @@ export async function GET(request: Request) {
             const dayStats = weeklyStatsMap[dateStr] || {};
             const dayPresent = Object.keys(dayStats).length;
             const dayComplete = Object.values(dayStats).filter(s => s.checkin && s.checkout).length;
+
+            // Count leaves for this day
+            const dayLeaves = weeklyLeaves?.filter(l => l.date === dateStr) || [];
+            const dayOnLeave = dayLeaves.length;
+
             const dayDate = new Date(dateStr);
             const dayNames = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
 
@@ -141,7 +152,8 @@ export async function GET(request: Request) {
                 date: dateStr,
                 day: dayNames[dayDate.getDay()],
                 present: dayPresent,
-                absent: totalUsers - dayPresent,
+                on_leave: dayOnLeave,
+                absent: Math.max(0, totalUsers - dayPresent - dayOnLeave),
                 complete: dayComplete
             };
         });
