@@ -155,9 +155,9 @@ export default function AdminDashboardPage() {
     }
 
     const pieData = data ? [
-        { name: 'Lengkap', value: data.stats.complete },
-        { name: 'Belum Pulang', value: data.stats.checked_in - data.stats.complete },
-        { name: 'Belum Absen', value: data.stats.not_checked_in },
+        { name: 'Lengkap', value: data.stats.complete, color: '#22C55E' },
+        { name: 'Belum Pulang', value: data.stats.checked_in - data.stats.complete, color: '#F59E0B' },
+        { name: 'Belum Absen', value: data.stats.not_checked_in, color: '#EF4444' },
     ].filter(d => d.value > 0) : [];
 
     const getStatusColor = (status: string) => {
@@ -353,8 +353,8 @@ export default function AdminDashboardPage() {
                                         dataKey="value"
                                         label={({ name, value }) => `${name}: ${value}`}
                                     >
-                                        {pieData.map((_, index) => (
-                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                        {pieData.map((item, index) => (
+                                            <Cell key={`cell-${index}`} fill={item.color} />
                                         ))}
                                     </Pie>
                                     <Tooltip />
