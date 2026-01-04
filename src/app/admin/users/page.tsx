@@ -242,6 +242,7 @@ export default function AdminUsersPage() {
                                     <th className="px-4 py-3 text-left text-sm font-medium text-teal-900 hidden sm:table-cell">Email</th>
                                     <th className="px-4 py-3 text-left text-sm font-medium text-teal-900">Role</th>
                                     <th className="px-4 py-3 text-left text-sm font-medium text-teal-900">Status</th>
+                                    <th className="px-4 py-3 text-left text-sm font-medium text-teal-900 hidden md:table-cell">Kata Kunci</th>
                                     <th className="px-4 py-3 text-right text-sm font-medium text-teal-900">Aksi</th>
                                 </tr>
                             </thead>
@@ -270,6 +271,15 @@ export default function AdminUsersPage() {
                                                 : 'bg-red-100 text-red-700'
                                                 }`}>
                                                 {user.status === 'active' ? 'Aktif' : 'Nonaktif'}
+                                            </span>
+                                        </td>
+                                        <td className="px-4 py-3 hidden md:table-cell">
+                                            <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${user.is_first_login
+                                                ? 'bg-amber-100 text-amber-700'
+                                                : 'bg-green-100 text-green-700'
+                                                }`}>
+                                                <Key className="w-3 h-3" />
+                                                {user.is_first_login ? 'Belum Diganti' : 'Sudah Diganti'}
                                             </span>
                                         </td>
                                         <td className="px-4 py-3">
