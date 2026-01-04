@@ -83,7 +83,7 @@ interface DashboardData {
     lateEmployees: LateEmployee[];
 }
 
-const COLORS = ['#22C55E', '#6366F1', '#EF4444'];
+const COLORS = ['#22C55E', '#F59E0B', '#EF4444']; // Lengkap=green, Belum Pulang=amber, Belum Absen=red
 
 export default function AdminDashboardPage() {
     const router = useRouter();
@@ -256,21 +256,21 @@ export default function AdminDashboardPage() {
                     <div className="bg-white rounded-xl shadow-sm p-4 border border-green-100">
                         <div className="flex items-center gap-2 mb-2">
                             <UserCheck className="w-4 h-4 text-green-500" />
-                            <p className="text-gray-500 text-sm">Sudah Check In</p>
+                            <p className="text-gray-500 text-sm">Sudah Check In (Hari Ini)</p>
                         </div>
                         <p className="text-3xl font-bold text-green-600">{data?.stats.checked_in || 0}</p>
                     </div>
                     <div className="bg-white rounded-xl shadow-sm p-4 border border-red-100">
                         <div className="flex items-center gap-2 mb-2">
                             <UserX className="w-4 h-4 text-red-500" />
-                            <p className="text-gray-500 text-sm">Belum Absen</p>
+                            <p className="text-gray-500 text-sm">Belum Absen (Hari Ini)</p>
                         </div>
                         <p className="text-3xl font-bold text-red-600">{data?.stats.not_checked_in || 0}</p>
                     </div>
                     <div className="bg-white rounded-xl shadow-sm p-4 border border-indigo-100">
                         <div className="flex items-center gap-2 mb-2">
                             <CheckCircle2 className="w-4 h-4 text-indigo-500" />
-                            <p className="text-gray-500 text-sm">Lengkap</p>
+                            <p className="text-gray-500 text-sm">Lengkap (Hari Ini)</p>
                         </div>
                         <p className="text-3xl font-bold text-indigo-600">{data?.stats.complete || 0}</p>
                     </div>
