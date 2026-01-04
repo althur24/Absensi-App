@@ -1,10 +1,7 @@
 @import "tailwindcss";
 
-/* Force Light Color Scheme - Prevents dark mode interference */
+/* Modern Teal Theme */
 :root {
-  color-scheme: light;
-  -webkit-tap-highlight-color: transparent;
-
   /* Primary Colors */
   --primary-50: #f0fdfa;
   --primary-100: #ccfbf1;
@@ -37,60 +34,16 @@
   --muted-foreground: #0f766e;
 }
 
-/* Prevent dark mode from affecting colors */
-@media (prefers-color-scheme: dark) {
-  :root {
-    color-scheme: light;
-  }
-}
-
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
-/* Base body styles */
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-/* Reset form elements for consistent styling across devices */
-input,
-button,
-select,
-textarea {
-  font-family: inherit;
-  font-size: inherit;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  appearance: none;
-}
-
-/* Date input specific fixes for mobile */
-input[type="date"] {
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  appearance: none;
-  background-color: #f0fdfa;
-  min-height: 44px;
-  /* Better touch target */
-}
-
-/* Button color fixes */
-button {
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  appearance: none;
-}
-
-/* Remove blue highlight on mobile tap */
-* {
-  -webkit-tap-highlight-color: transparent;
 }
 
 /* Custom scrollbar */
@@ -127,19 +80,4 @@ a {
 /* Smooth transitions for interactive elements */
 .transition-smooth {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* Fix for iOS Safari gradients */
-.bg-gradient-to-r,
-.bg-gradient-to-br {
-  -webkit-background-clip: padding-box;
-  background-clip: padding-box;
-}
-
-/* Ensure consistent border-radius rendering */
-.rounded-xl,
-.rounded-2xl,
-.rounded-full {
-  -webkit-mask-image: -webkit-radial-gradient(white, black);
-  mask-image: radial-gradient(white, black);
 }
