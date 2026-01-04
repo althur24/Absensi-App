@@ -71,12 +71,12 @@ export default function ChangePasswordPage() {
         setError('');
 
         if (newPassword !== confirmPassword) {
-            setError('Password baru tidak cocok');
+            setError('Kata kunci baru tidak cocok');
             return;
         }
 
         if (newPassword.length < 6) {
-            setError('Password minimal 6 karakter');
+            setError('Kata kunci minimal 6 karakter');
             return;
         }
 
@@ -92,7 +92,7 @@ export default function ChangePasswordPage() {
             const data = await res.json();
 
             if (!res.ok) {
-                setError(data.error || 'Gagal mengubah password');
+                setError(data.error || 'Gagal mengubah kata kunci');
                 return;
             }
 
@@ -122,8 +122,8 @@ export default function ChangePasswordPage() {
                     <div className="inline-flex items-center justify-center w-20 h-20 bg-white/20 backdrop-blur-sm rounded-2xl mb-4 shadow-lg">
                         <ShieldCheck className="w-10 h-10 text-white" strokeWidth={2} />
                     </div>
-                    <h1 className="text-3xl font-bold text-white mb-2">Ubah Password</h1>
-                    <p className="text-teal-100">Amankan akun Anda dengan password baru</p>
+                    <h1 className="text-3xl font-bold text-white mb-2">Ubah Kata Kunci</h1>
+                    <p className="text-teal-100">Amankan akun Anda dengan kata kunci baru</p>
                 </div>
 
                 {/* Form */}
@@ -138,19 +138,19 @@ export default function ChangePasswordPage() {
 
                         <PasswordInput
                             id="currentPassword"
-                            label="Password Saat Ini"
+                            label="Kata Kunci Saat Ini"
                             value={currentPassword}
                             onChange={setCurrentPassword}
                             showKey="current"
                             showPasswords={showPasswords}
                             setShowPasswords={setShowPasswords}
-                            placeholder="Masukkan password lama"
+                            placeholder="Masukkan kata kunci lama"
                             icon={Lock}
                         />
 
                         <PasswordInput
                             id="newPassword"
-                            label="Password Baru"
+                            label="Kata Kunci Baru"
                             value={newPassword}
                             onChange={setNewPassword}
                             showKey="new"
@@ -162,13 +162,13 @@ export default function ChangePasswordPage() {
 
                         <PasswordInput
                             id="confirmPassword"
-                            label="Konfirmasi Password"
+                            label="Ulangi Kata Kunci Baru"
                             value={confirmPassword}
                             onChange={setConfirmPassword}
                             showKey="confirm"
                             showPasswords={showPasswords}
                             setShowPasswords={setShowPasswords}
-                            placeholder="Ketik ulang password baru"
+                            placeholder="Ketik ulang kata kunci baru"
                             icon={Key}
                         />
 
@@ -185,7 +185,7 @@ export default function ChangePasswordPage() {
                             ) : (
                                 <>
                                     <Save className="w-5 h-5" />
-                                    Simpan Password
+                                    Simpan Kata Kunci
                                 </>
                             )}
                         </button>

@@ -151,7 +151,7 @@ export default function AttendanceButton({ type, onSuccess }: AttendanceButtonPr
                 ) : (
                     <>
                         <Icon className="w-6 h-6" />
-                        <span>{isCheckIn ? 'Check In' : 'Check Out'}</span>
+                        <span>{isCheckIn ? 'Absen Masuk' : 'Absen Pulang'}</span>
                     </>
                 )}
             </button>

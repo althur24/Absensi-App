@@ -175,7 +175,7 @@ export default function DashboardPage() {
                         <button
                             onClick={handleLogout}
                             className="p-2 rounded-full hover:bg-white/20 transition-colors"
-                            title="Logout"
+                            title="Keluar"
                         >
                             <LogOut className="w-6 h-6" />
                         </button>
@@ -199,7 +199,7 @@ export default function DashboardPage() {
                             }`}>
                             <div className="flex items-center gap-2 mb-2">
                                 <CircleDot className={`w-4 h-4 ${todayStatus?.hasCheckedIn ? 'text-green-500' : 'text-gray-400'}`} />
-                                <span className="text-sm font-medium text-gray-600">Check In</span>
+                                <span className="text-sm font-medium text-gray-600">Absen Masuk</span>
                             </div>
                             <p className={`text-xl font-bold ${todayStatus?.hasCheckedIn ? 'text-green-700' : 'text-gray-400'}`}>
                                 {todayStatus?.checkin ? formatTime(todayStatus.checkin.created_at) : '--:--'}
@@ -213,7 +213,7 @@ export default function DashboardPage() {
                             }`}>
                             <div className="flex items-center gap-2 mb-2">
                                 <CircleDot className={`w-4 h-4 ${todayStatus?.hasCheckedOut ? 'text-indigo-500' : 'text-gray-400'}`} />
-                                <span className="text-sm font-medium text-gray-600">Check Out</span>
+                                <span className="text-sm font-medium text-gray-600">Absen Pulang</span>
                             </div>
                             <p className={`text-xl font-bold ${todayStatus?.hasCheckedOut ? 'text-indigo-700' : 'text-gray-400'}`}>
                                 {todayStatus?.checkout ? formatTime(todayStatus.checkout.created_at) : '--:--'}
@@ -228,7 +228,7 @@ export default function DashboardPage() {
                         <>
                             <div className="bg-teal-50 border border-teal-200 rounded-xl p-4">
                                 <p className="text-teal-800 text-sm text-center">
-                                    👋 <span className="font-medium">Selamat datang!</span> Tekan tombol di bawah ini untuk melakukan <span className="font-semibold">Check In</span> hari ini.
+                                    👋 <span className="font-medium">Selamat datang!</span> Tekan tombol di bawah ini untuk melakukan <span className="font-semibold">Absen Masuk</span> hari ini.
                                 </p>
                             </div>
                             <AttendanceButton
@@ -242,7 +242,7 @@ export default function DashboardPage() {
                         <>
                             <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4">
                                 <p className="text-indigo-800 text-sm text-center">
-                                    ✅ Anda sudah <span className="font-semibold">Check In</span>. Jangan lupa <span className="font-semibold">Check Out</span> saat pulang dengan menekan tombol di bawah ini.
+                                    ✅ Anda sudah <span className="font-semibold">Absen Masuk</span>. Jangan lupa <span className="font-semibold">Absen Pulang</span> saat pulang dengan menekan tombol di bawah ini.
                                 </p>
                             </div>
                             <AttendanceButton
@@ -291,7 +291,7 @@ export default function DashboardPage() {
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
                     <div className="bg-white rounded-2xl w-full max-w-sm shadow-2xl">
                         <div className="flex items-center justify-between p-4 border-b border-gray-100">
-                            <h2 className="text-lg font-bold text-gray-900">Konfirmasi Logout</h2>
+                            <h2 className="text-lg font-bold text-gray-900">Konfirmasi Keluar</h2>
                             <button
                                 onClick={() => setShowLogoutModal(false)}
                                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -305,7 +305,7 @@ export default function DashboardPage() {
                                 Apakah Anda yakin ingin keluar dari akun?
                             </p>
                             <p className="text-sm text-gray-500 text-center">
-                                Anda perlu login kembali untuk mengakses aplikasi.
+                                Anda perlu masuk kembali untuk mengakses aplikasi.
                             </p>
                         </div>
 
@@ -323,7 +323,7 @@ export default function DashboardPage() {
                                 className="flex-1 py-3 bg-red-600 text-white font-medium rounded-xl hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
                             >
                                 <LogOut className="w-5 h-5" />
-                                Logout
+                                Keluar
                             </button>
                         </div>
                     </div>

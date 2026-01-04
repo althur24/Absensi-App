@@ -465,7 +465,7 @@ export default function AdminDashboardPage() {
                                 Apakah Anda yakin ingin keluar dari akun?
                             </p>
                             <p className="text-sm text-gray-500 text-center">
-                                Anda perlu login kembali untuk mengakses aplikasi.
+                                Anda perlu masuk kembali untuk mengakses aplikasi.
                             </p>
                         </div>
 
@@ -483,7 +483,7 @@ export default function AdminDashboardPage() {
                                 className="flex-1 py-3 bg-red-600 text-white font-medium rounded-xl hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
                             >
                                 <LogOut className="w-5 h-5" />
-                                Logout
+                                Keluar
                             </button>
                         </div>
                     </div>

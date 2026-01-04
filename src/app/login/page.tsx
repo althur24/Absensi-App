@@ -90,7 +90,7 @@ export default function LoginPage() {
 
                         <div>
                             <label htmlFor="password" className="block text-sm font-medium text-teal-900 mb-2">
-                                Password
+                                Kata Kunci
                             </label>
                             <div className="relative">
                                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-teal-400" />
@@ -126,7 +126,7 @@ export default function LoginPage() {
                             ) : (
                                 <>
                                     <LogIn className="w-5 h-5" />
-                                    Login
+                                    Masuk
                                 </>
                             )}
                         </button>
@@ -134,7 +134,7 @@ export default function LoginPage() {
                 </div>
 
                 <p className="text-center text-teal-200 text-sm mt-6">
-                    © 2024 Attendance System
+                    © 2024 Sistem Absensi Karyawan
                 </p>
             </div>
         </div>
