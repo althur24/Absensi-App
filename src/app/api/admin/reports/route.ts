@@ -26,6 +26,7 @@ export async function GET(request: Request) {
         const userId = searchParams.get('user_id');
         const startDate = searchParams.get('start_date');
         const endDate = searchParams.get('end_date');
+        const divisionId = searchParams.get('division_id'); // NEW: filter by division
 
         const supabase = createServerClient();
 
@@ -44,11 +45,18 @@ export async function GET(request: Request) {
                 const targetDate = date || new Date().toISOString().split('T')[0];
                 const range = getWIBDateRange(targetDate);
 
-                const { data: users } = await supabase
+                let usersQuery = supabase
                     .from('users')
-                    .select('id, name, email')
+                    .select('id, name, email, division_id, divisions(name)')
                     .eq('status', 'active')
                     .eq('role', 'user');
+
+                // Apply division filter if provided
+                if (divisionId) {
+                    usersQuery = usersQuery.eq('division_id', divisionId);
+                }
+
+                const { data: users } = await usersQuery;
 
                 const { data: attendance } = await supabase
                     .from('attendance')
@@ -90,6 +98,7 @@ export async function GET(request: Request) {
                     return {
                         name: user.name,
                         email: user.email,
+                        divisi: (user as typeof user & { divisions?: { name: string } }).divisions?.name || '-',
                         status,
                         checkin_time: checkin ? new Date(checkin.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' }) : '-',
                         checkout_time: checkout ? new Date(checkout.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' }) : '-',
@@ -114,11 +123,17 @@ export async function GET(request: Request) {
                 const startRange = getWIBDateRange(startOfMonth);
                 const endRange = getWIBDateRange(endOfMonth);
 
-                const { data: users } = await supabase
+                let monthlyUsersQuery = supabase
                     .from('users')
-                    .select('id, name, email')
+                    .select('id, name, email, division_id, divisions(name)')
                     .eq('status', 'active')
                     .eq('role', 'user');
+
+                if (divisionId) {
+                    monthlyUsersQuery = monthlyUsersQuery.eq('division_id', divisionId);
+                }
+
+                const { data: users } = await monthlyUsersQuery;
 
                 const { data: attendance } = await supabase
                     .from('attendance')
@@ -171,6 +186,7 @@ export async function GET(request: Request) {
                     return {
                         name: user.name,
                         email: user.email,
+                        divisi: (user as typeof user & { divisions?: { name: string } }).divisions?.name || '-',
                         total_hari_kerja: daysInMonth,
                         hadir: attendedDays.size,
                         terlambat: lateDays,
@@ -263,11 +279,17 @@ export async function GET(request: Request) {
                 const startRange = getWIBDateRange(startOfMonth);
                 const endRange = getWIBDateRange(endOfMonth);
 
-                const { data: users } = await supabase
+                let lateUsersQuery = supabase
                     .from('users')
-                    .select('id, name, email')
+                    .select('id, name, email, division_id, divisions(name)')
                     .eq('status', 'active')
                     .eq('role', 'user');
+
+                if (divisionId) {
+                    lateUsersQuery = lateUsersQuery.eq('division_id', divisionId);
+                }
+
+                const { data: users } = await lateUsersQuery;
 
                 const { data: attendance } = await supabase
                     .from('attendance')
@@ -298,6 +320,7 @@ export async function GET(request: Request) {
                     return {
                         name: user.name,
                         email: user.email,
+                        divisi: (user as typeof user & { divisions?: { name: string } }).divisions?.name || '-',
                         total_hadir: userCheckins.length,
                         total_terlambat: lateDays,
                         persentase_terlambat: userCheckins.length > 0 ? Math.round((lateDays / userCheckins.length) * 100) : 0,
@@ -320,20 +343,28 @@ export async function GET(request: Request) {
                 const startOfMonth = `${targetMonth}-01`;
                 const endOfMonth = new Date(year, mon, 0).toISOString().split('T')[0];
 
-                const { data: leaves } = await supabase
+                let leavesQuery = supabase
                     .from('leaves')
                     .select(`
-            *,
-            user:users!leaves_user_id_fkey(name, email)
-          `)
+                        *,
+                        user:users!leaves_user_id_fkey(name, email, division_id, divisions(name))
+                    `)
                     .gte('date', startOfMonth)
                     .lte('date', endOfMonth)
                     .order('date', { ascending: true });
 
-                const report = leaves?.map(l => ({
+                const { data: leaves } = await leavesQuery;
+
+                // Filter by division if needed
+                const filteredLeaves = divisionId
+                    ? leaves?.filter(l => l.user?.division_id === divisionId)
+                    : leaves;
+
+                const report = filteredLeaves?.map(l => ({
                     tanggal: l.date,
                     nama: l.user?.name,
                     email: l.user?.email,
+                    divisi: (l.user as { divisions?: { name: string } })?.divisions?.name || '-',
                     jenis: l.type.charAt(0).toUpperCase() + l.type.slice(1),
                     keterangan: l.reason || '-',
                 })) || [];

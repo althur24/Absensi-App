@@ -14,8 +14,14 @@ import {
     User as UserIcon,
     Clock,
     CalendarOff,
-    FileText
+    FileText,
+    Building2
 } from 'lucide-react';
+
+interface Division {
+    id: string;
+    name: string;
+}
 
 interface ReportMeta {
     type: string;
@@ -80,9 +86,12 @@ export default function AdminReportsPage() {
     const [userId, setUserId] = useState('');
     const [startDate, setStartDate] = useState(new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0]);
     const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
+    const [divisions, setDivisions] = useState<Division[]>([]);
+    const [divisionId, setDivisionId] = useState('');
 
     useEffect(() => {
         fetchUsers();
+        fetchDivisions();
     }, []);
 
     async function fetchUsers() {
@@ -91,6 +100,18 @@ export default function AdminReportsPage() {
             if (res.ok) {
                 const data = await res.json();
                 setUsers(data.users?.filter((u: User) => u.role === 'user') || []);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+        }
+    }
+
+    async function fetchDivisions() {
+        try {
+            const res = await fetch('/api/admin/divisions');
+            if (res.ok) {
+                const data = await res.json();
+                setDivisions(data.divisions || []);
             }
         } catch (error) {
             console.error('Error:', error);
@@ -116,6 +137,11 @@ export default function AdminReportsPage() {
                 case 'employee':
                     url += `&user_id=${userId}&start_date=${startDate}&end_date=${endDate}`;
                     break;
+            }
+
+            // Add division filter for applicable reports
+            if (divisionId && selectedType !== 'employee') {
+                url += `&division_id=${divisionId}`;
             }
 
             const res = await fetch(url);
@@ -188,8 +214,8 @@ export default function AdminReportsPage() {
                                 key={type.id}
                                 onClick={() => { setSelectedType(type.id); setReportData(null); }}
                                 className={`p-4 rounded-xl border-2 transition-all text-left ${selectedType === type.id
-                                        ? 'border-teal-500 bg-teal-50'
-                                        : 'border-gray-200 bg-white hover:border-teal-300'
+                                    ? 'border-teal-500 bg-teal-50'
+                                    : 'border-gray-200 bg-white hover:border-teal-300'
                                     }`}
                             >
                                 <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-2 ${type.color}`}>
@@ -230,6 +256,26 @@ export default function AdminReportsPage() {
                                     onChange={(e) => setMonth(e.target.value)}
                                     className="w-full px-4 py-2 bg-teal-50 border border-teal-200 rounded-xl text-teal-900 focus:ring-2 focus:ring-teal-500"
                                 />
+                            </div>
+                        )}
+
+                        {/* Division filter - for all reports except employee */}
+                        {selectedType !== 'employee' && divisions.length > 0 && (
+                            <div>
+                                <label className="block text-sm text-gray-600 mb-1 flex items-center gap-1">
+                                    <Building2 className="w-4 h-4" />
+                                    Divisi
+                                </label>
+                                <select
+                                    value={divisionId}
+                                    onChange={(e) => setDivisionId(e.target.value)}
+                                    className="w-full px-4 py-2 bg-teal-50 border border-teal-200 rounded-xl text-teal-900 focus:ring-2 focus:ring-teal-500"
+                                >
+                                    <option value="">Semua Divisi</option>
+                                    {divisions.map((d) => (
+                                        <option key={d.id} value={d.id}>{d.name}</option>
+                                    ))}
+                                </select>
                             </div>
                         )}
 
