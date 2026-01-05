@@ -13,6 +13,7 @@ export async function GET(request: Request) {
         const { searchParams } = new URL(request.url);
         const date = searchParams.get('date');
         const userId = searchParams.get('user_id');
+        const divisionId = searchParams.get('division_id');
 
         const supabase = createServerClient();
 
@@ -20,7 +21,7 @@ export async function GET(request: Request) {
             .from('leaves')
             .select(`
         *,
-        user:users!leaves_user_id_fkey(id, name, email),
+        user:users!leaves_user_id_fkey(id, name, email, division_id, divisions(name)),
         created_by_user:users!leaves_created_by_fkey(id, name)
       `)
             .order('date', { ascending: false });
@@ -35,9 +36,15 @@ export async function GET(request: Request) {
 
         const { data, error } = await query;
 
+        // Filter by division in memory (since it's a nested relation)
+        let filteredData = data;
+        if (divisionId && data) {
+            filteredData = data.filter(l => l.user?.division_id === divisionId);
+        }
+
         if (error) throw error;
 
-        return NextResponse.json({ leaves: data });
+        return NextResponse.json({ leaves: filteredData });
     } catch (error) {
         console.error('Get leaves error:', error);
         return NextResponse.json({ error: 'Terjadi kesalahan server' }, { status: 500 });

@@ -16,8 +16,14 @@ import {
     Palmtree,
     Building2,
     Loader2,
-    Save
+    Save,
+    Filter
 } from 'lucide-react';
+
+interface Division {
+    id: string;
+    name: string;
+}
 
 interface Leave {
     id: string;
@@ -29,6 +35,8 @@ interface Leave {
         id: string;
         name: string;
         email: string;
+        division_id?: string;
+        divisions?: { name: string };
     };
 }
 
@@ -43,8 +51,10 @@ export default function AdminLeavesPage() {
     const router = useRouter();
     const [leaves, setLeaves] = useState<Leave[]>([]);
     const [users, setUsers] = useState<User[]>([]);
+    const [divisions, setDivisions] = useState<Division[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedDate, setSelectedDate] = useState(getTodayDate());
+    const [filterDivision, setFilterDivision] = useState('');
     const [showModal, setShowModal] = useState(false);
     const [saving, setSaving] = useState(false);
     const [message, setMessage] = useState({ type: '', text: '' });
@@ -57,14 +67,30 @@ export default function AdminLeavesPage() {
 
     useEffect(() => {
         fetchData();
+        fetchDivisions();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [selectedDate]);
+    }, [selectedDate, filterDivision]);
+
+    async function fetchDivisions() {
+        try {
+            const res = await fetch('/api/admin/divisions');
+            if (res.ok) {
+                const data = await res.json();
+                setDivisions(data.divisions || []);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+        }
+    }
 
     async function fetchData() {
         setLoading(true);
         try {
+            let url = `/api/admin/leaves?date=${selectedDate}`;
+            if (filterDivision) url += `&division_id=${filterDivision}`;
+
             const [leavesRes, usersRes] = await Promise.all([
-                fetch(`/api/admin/leaves?date=${selectedDate}`),
+                fetch(url),
                 fetch('/api/admin/users'),
             ]);
 
@@ -183,10 +209,27 @@ export default function AdminLeavesPage() {
                 {/* Message */}
                 {message.text && (
                     <div className={`mb-4 p-4 rounded-xl text-sm border ${message.type === 'success'
-                            ? 'bg-green-50 text-green-700 border-green-200'
-                            : 'bg-red-50 text-red-700 border-red-200'
+                        ? 'bg-green-50 text-green-700 border-green-200'
+                        : 'bg-red-50 text-red-700 border-red-200'
                         }`}>
                         {message.text}
+                    </div>
+                )}
+
+                {/* Division Filter */}
+                {divisions.length > 0 && (
+                    <div className="mb-4 flex items-center gap-2">
+                        <Filter className="w-4 h-4 text-gray-500" />
+                        <select
+                            value={filterDivision}
+                            onChange={e => setFilterDivision(e.target.value)}
+                            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 outline-none"
+                        >
+                            <option value="">Semua Divisi</option>
+                            {divisions.map(d => (
+                                <option key={d.id} value={d.id}>{d.name}</option>
+                            ))}
+                        </select>
                     </div>
                 )}
 
@@ -214,6 +257,9 @@ export default function AdminLeavesPage() {
                                             <div>
                                                 <p className="font-medium text-teal-900">{leave.user?.name}</p>
                                                 <p className="text-sm text-gray-500">{leave.user?.email}</p>
+                                                {leave.user?.divisions?.name && (
+                                                    <p className="text-xs text-teal-600 mt-0.5">{leave.user.divisions.name}</p>
+                                                )}
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-3">
@@ -293,8 +339,8 @@ export default function AdminLeavesPage() {
                                                 type="button"
                                                 onClick={() => setFormData({ ...formData, type: type.value })}
                                                 className={`p-3 rounded-xl border-2 flex items-center gap-2 transition-all ${formData.type === type.value
-                                                        ? 'border-teal-500 bg-teal-50'
-                                                        : 'border-gray-200 hover:border-teal-300'
+                                                    ? 'border-teal-500 bg-teal-50'
+                                                    : 'border-gray-200 hover:border-teal-300'
                                                     }`}
                                             >
                                                 <IconComponent className={`w-5 h-5 ${formData.type === type.value ? 'text-teal-600' : 'text-gray-500'}`} />

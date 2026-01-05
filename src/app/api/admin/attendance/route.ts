@@ -15,6 +15,7 @@ export async function GET(request: Request) {
         const { searchParams } = new URL(request.url);
         const date = searchParams.get('date');
         const userId = searchParams.get('user_id');
+        const divisionId = searchParams.get('division_id');
         const limit = parseInt(searchParams.get('limit') || '50', 10);
         const offset = parseInt(searchParams.get('offset') || '0', 10);
 
@@ -24,7 +25,7 @@ export async function GET(request: Request) {
             .from('attendance')
             .select(`
         *,
-        user:users(id, name, email)
+        user:users(id, name, email, division_id, divisions(name))
       `, { count: 'exact' })
             .order('created_at', { ascending: false })
             .range(offset, offset + limit - 1);
@@ -47,13 +48,19 @@ export async function GET(request: Request) {
 
         const { data: attendance, error, count } = await query;
 
+        // Filter by division in memory (since it's a nested relation)
+        let filteredAttendance = attendance;
+        if (divisionId && attendance) {
+            filteredAttendance = attendance.filter(a => a.user?.division_id === divisionId);
+        }
+
         if (error) {
             throw error;
         }
 
         return NextResponse.json({
-            attendance,
-            total: count,
+            attendance: filteredAttendance,
+            total: divisionId ? filteredAttendance?.length : count,
             limit,
             offset,
         });

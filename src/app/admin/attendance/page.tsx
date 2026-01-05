@@ -15,29 +15,57 @@ import {
     LogOut as LogOutIcon,
     Smartphone,
     Eye,
-    Image
+    Image,
+    Filter,
+    Building2
 } from 'lucide-react';
 
+interface Division {
+    id: string;
+    name: string;
+}
+
 type AttendanceWithUser = Omit<Attendance, 'user'> & {
-    user: Pick<User, 'id' | 'name' | 'email'>;
+    user: Pick<User, 'id' | 'name' | 'email'> & {
+        division_id?: string;
+        divisions?: { name: string };
+    };
 };
 
 export default function AdminAttendancePage() {
     const router = useRouter();
     const [records, setRecords] = useState<AttendanceWithUser[]>([]);
+    const [divisions, setDivisions] = useState<Division[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedDate, setSelectedDate] = useState(getTodayDate());
+    const [filterDivision, setFilterDivision] = useState('');
     const [selectedRecord, setSelectedRecord] = useState<AttendanceWithUser | null>(null);
 
     useEffect(() => {
         fetchRecords();
+        fetchDivisions();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [selectedDate]);
+    }, [selectedDate, filterDivision]);
+
+    async function fetchDivisions() {
+        try {
+            const res = await fetch('/api/admin/divisions');
+            if (res.ok) {
+                const data = await res.json();
+                setDivisions(data.divisions || []);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+        }
+    }
 
     async function fetchRecords() {
         setLoading(true);
         try {
-            const res = await fetch(`/api/admin/attendance?date=${selectedDate}`);
+            let url = `/api/admin/attendance?date=${selectedDate}`;
+            if (filterDivision) url += `&division_id=${filterDivision}`;
+
+            const res = await fetch(url);
             if (res.ok) {
                 const data = await res.json();
                 setRecords(data.attendance || []);
@@ -81,6 +109,23 @@ export default function AdminAttendancePage() {
             </header>
 
             <main className="max-w-4xl mx-auto px-4 py-6">
+                {/* Division Filter */}
+                {divisions.length > 0 && (
+                    <div className="mb-4 flex items-center gap-2">
+                        <Filter className="w-4 h-4 text-gray-500" />
+                        <select
+                            value={filterDivision}
+                            onChange={e => setFilterDivision(e.target.value)}
+                            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 outline-none"
+                        >
+                            <option value="">Semua Divisi</option>
+                            {divisions.map(d => (
+                                <option key={d.id} value={d.id}>{d.name}</option>
+                            ))}
+                        </select>
+                    </div>
+                )}
+
                 {loading ? (
                     <div className="flex justify-center py-12">
                         <div className="animate-spin h-10 w-10 border-4 border-teal-500 border-t-transparent rounded-full" />
@@ -97,6 +142,7 @@ export default function AdminAttendancePage() {
                                 <thead className="bg-teal-50 border-b border-teal-100">
                                     <tr>
                                         <th className="px-4 py-3 text-left text-sm font-medium text-teal-900">Nama</th>
+                                        <th className="px-4 py-3 text-left text-sm font-medium text-teal-900 hidden md:table-cell">Divisi</th>
                                         <th className="px-4 py-3 text-left text-sm font-medium text-teal-900">Tipe</th>
                                         <th className="px-4 py-3 text-left text-sm font-medium text-teal-900">Waktu</th>
                                         <th className="px-4 py-3 text-right text-sm font-medium text-teal-900">Detail</th>
@@ -108,6 +154,16 @@ export default function AdminAttendancePage() {
                                             <td className="px-4 py-3">
                                                 <p className="font-medium text-teal-900">{record.user?.name}</p>
                                                 <p className="text-sm text-gray-500">{record.user?.email}</p>
+                                            </td>
+                                            <td className="px-4 py-3 hidden md:table-cell">
+                                                {record.user?.divisions?.name ? (
+                                                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-teal-100 text-teal-700">
+                                                        <Building2 className="w-3 h-3" />
+                                                        {record.user.divisions.name}
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-gray-400 text-sm">-</span>
+                                                )}
                                             </td>
                                             <td className="px-4 py-3">
                                                 <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${record.type === 'checkin'
