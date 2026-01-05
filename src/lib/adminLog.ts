@@ -9,7 +9,10 @@ export type AdminAction =
     | 'config_update_location'
     | 'config_update_hours'
     | 'leave_approve'
-    | 'leave_reject';
+    | 'leave_reject'
+    | 'division_create'
+    | 'division_update'
+    | 'division_delete';
 
 interface LogDetails {
     [key: string]: string | number | boolean | null | undefined;
@@ -47,4 +50,7 @@ export const actionLabels: Record<AdminAction, string> = {
     config_update_hours: 'Mengubah Jam Kerja',
     leave_approve: 'Menyetujui Izin',
     leave_reject: 'Menolak Izin',
+    division_create: 'Menambah Divisi',
+    division_update: 'Mengubah Divisi',
+    division_delete: 'Menghapus Divisi',
 };

@@ -42,6 +42,7 @@ interface UserSummary {
     user_id: string;
     name: string;
     email: string;
+    division: string | null;
     checkin_time: string | null;
     checkout_time: string | null;
     status: 'not_checked_in' | 'checked_in' | 'complete' | 'on_leave';
@@ -410,6 +411,9 @@ export default function AdminDashboardPage() {
                                         <div>
                                             <p className="font-medium text-teal-900">{user.name}</p>
                                             <p className="text-sm text-gray-500">{user.email}</p>
+                                            {user.division && (
+                                                <p className="text-xs text-teal-600 mt-0.5">{user.division}</p>
+                                            )}
                                         </div>
                                         <div className="text-right">
                                             <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(user.status)}`}>
@@ -489,6 +493,9 @@ export default function AdminDashboardPage() {
                                     config_update_hours: 'Ubah Jam Kerja',
                                     leave_approve: 'Setujui Izin',
                                     leave_reject: 'Tolak Izin',
+                                    division_create: 'Tambah Divisi',
+                                    division_update: 'Ubah Divisi',
+                                    division_delete: 'Hapus Divisi',
                                 };
                                 const logTime = new Date(log.created_at).toLocaleString('id-ID', {
                                     timeZone: 'Asia/Jakarta',
@@ -506,6 +513,9 @@ export default function AdminDashboardPage() {
                                                 <p className="text-sm text-teal-600">{actionLabels[log.action] || log.action}</p>
                                                 {details?.user_name && (
                                                     <p className="text-xs text-gray-500 mt-1">User: {details.user_name}</p>
+                                                )}
+                                                {details?.division_name && (
+                                                    <p className="text-xs text-gray-500 mt-1">Divisi: {details.division_name}</p>
                                                 )}
                                             </div>
                                             <span className="text-xs text-gray-400">{logTime}</span>

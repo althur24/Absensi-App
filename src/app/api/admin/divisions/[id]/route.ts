@@ -48,8 +48,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
 
         if (error) throw error;
 
-        await logAdminAction(session.id, session.name, 'user_update', {
-            action_type: 'division_update',
+        await logAdminAction(session.id, session.name, 'division_update', {
             division_name: name,
         });
 
@@ -101,8 +100,7 @@ export async function DELETE(request: Request, { params }: RouteParams) {
 
         if (error) throw error;
 
-        await logAdminAction(session.id, session.name, 'user_delete', {
-            action_type: 'division_delete',
+        await logAdminAction(session.id, session.name, 'division_delete', {
             division_name: division?.name,
         });
 

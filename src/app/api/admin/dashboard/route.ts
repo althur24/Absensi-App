@@ -37,7 +37,7 @@ export async function GET(request: Request) {
         // Get all active users
         const { data: users } = await supabase
             .from('users')
-            .select('id, name, email')
+            .select('id, name, email, division_id, divisions(name)')
             .eq('status', 'active')
             .eq('role', 'user');
 
@@ -227,6 +227,7 @@ export async function GET(request: Request) {
                 user_id: user.id,
                 name: user.name,
                 email: user.email,
+                division: (user as typeof user & { divisions?: { name: string } }).divisions?.name || null,
                 checkin_time: stats.checkin || null,
                 checkout_time: stats.checkout || null,
                 status,

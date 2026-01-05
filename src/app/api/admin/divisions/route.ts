@@ -72,8 +72,7 @@ export async function POST(request: Request) {
         if (error) throw error;
 
         // Log admin action
-        await logAdminAction(session.id, session.name, 'user_create', {
-            action_type: 'division_create',
+        await logAdminAction(session.id, session.name, 'division_create', {
             division_name: name,
         });
 
