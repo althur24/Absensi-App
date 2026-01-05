@@ -21,7 +21,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
 
         const { id } = await params;
         const body = await request.json();
-        const { name, email, role, status, password } = body;
+        const { name, email, role, status, password, division_id } = body;
 
         const supabase = createServerClient();
 
@@ -31,6 +31,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
         if (email) updateData.email = email.toLowerCase();
         if (role) updateData.role = role;
         if (status) updateData.status = status;
+        if (division_id !== undefined) updateData.division_id = division_id || null;
 
         // If resetting password
         if (password) {

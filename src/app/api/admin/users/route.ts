@@ -19,7 +19,7 @@ export async function GET() {
 
         const { data: users, error } = await supabase
             .from('users')
-            .select('id, name, email, role, is_first_login, status, created_at')
+            .select('id, name, email, role, is_first_login, status, created_at, division_id, divisions(id, name)')
             .order('created_at', { ascending: false });
 
         if (error) {
@@ -47,7 +47,7 @@ export async function POST(request: Request) {
             );
         }
 
-        const { name, email, password, role = 'user' } = await request.json();
+        const { name, email, password, role = 'user', division_id } = await request.json();
 
         if (!name || !email || !password) {
             return NextResponse.json(
@@ -93,8 +93,9 @@ export async function POST(request: Request) {
                 role,
                 is_first_login: true,
                 status: 'active',
+                division_id: division_id || null,
             })
-            .select('id, name, email, role, is_first_login, status, created_at')
+            .select('id, name, email, role, is_first_login, status, created_at, division_id')
             .single();
 
         if (error) {

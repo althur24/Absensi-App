@@ -18,25 +18,47 @@ import {
     User as UserIcon,
     Shield,
     Trash2,
-    AlertTriangle
+    AlertTriangle,
+    Building2,
+    Filter
 } from 'lucide-react';
+
+interface Division {
+    id: string;
+    name: string;
+}
 
 export default function AdminUsersPage() {
     const router = useRouter();
     const [users, setUsers] = useState<User[]>([]);
+    const [divisions, setDivisions] = useState<Division[]>([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [userToDelete, setUserToDelete] = useState<User | null>(null);
     const [editingUser, setEditingUser] = useState<User | null>(null);
-    const [formData, setFormData] = useState({ name: '', email: '', password: '', role: 'user' });
+    const [formData, setFormData] = useState({ name: '', email: '', password: '', role: 'user', division_id: '' });
     const [saving, setSaving] = useState(false);
     const [deleting, setDeleting] = useState(false);
     const [message, setMessage] = useState({ type: '', text: '' });
+    const [filterDivision, setFilterDivision] = useState('');
 
     useEffect(() => {
         fetchUsers();
+        fetchDivisions();
     }, []);
+
+    async function fetchDivisions() {
+        try {
+            const res = await fetch('/api/admin/divisions');
+            if (res.ok) {
+                const data = await res.json();
+                setDivisions(data.divisions || []);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+        }
+    }
 
     async function fetchUsers() {
         try {
@@ -54,13 +76,19 @@ export default function AdminUsersPage() {
 
     const openAddModal = () => {
         setEditingUser(null);
-        setFormData({ name: '', email: '', password: '', role: 'user' });
+        setFormData({ name: '', email: '', password: '', role: 'user', division_id: '' });
         setShowModal(true);
     };
 
     const openEditModal = (user: User) => {
         setEditingUser(user);
-        setFormData({ name: user.name, email: user.email, password: '', role: user.role });
+        setFormData({
+            name: user.name,
+            email: user.email,
+            password: '',
+            role: user.role,
+            division_id: (user as User & { division_id?: string }).division_id || ''
+        });
         setShowModal(true);
     };
 
@@ -74,7 +102,11 @@ export default function AdminUsersPage() {
                 const res = await fetch(`/api/admin/users/${editingUser.id}`, {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name: formData.name, role: formData.role }),
+                    body: JSON.stringify({
+                        name: formData.name,
+                        role: formData.role,
+                        division_id: formData.division_id || null
+                    }),
                 });
 
                 if (!res.ok) {
@@ -211,13 +243,22 @@ export default function AdminUsersPage() {
                             <h1 className="text-xl font-bold text-teal-900">Kelola User</h1>
                         </div>
                     </div>
-                    <button
-                        onClick={openAddModal}
-                        className="px-4 py-2 bg-teal-600 text-white rounded-xl hover:bg-teal-700 transition-colors flex items-center gap-2 shadow-lg shadow-teal-500/30"
-                    >
-                        <Plus className="w-5 h-5" />
-                        <span className="hidden sm:inline">Tambah User</span>
-                    </button>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => router.push('/admin/divisions')}
+                            className="px-3 py-2 bg-white text-teal-700 rounded-xl hover:bg-teal-50 transition-colors flex items-center gap-2 border border-teal-200"
+                        >
+                            <Building2 className="w-4 h-4" />
+                            <span className="hidden sm:inline">Divisi</span>
+                        </button>
+                        <button
+                            onClick={openAddModal}
+                            className="px-4 py-2 bg-teal-600 text-white rounded-xl hover:bg-teal-700 transition-colors flex items-center gap-2 shadow-lg shadow-teal-500/30"
+                        >
+                            <Plus className="w-5 h-5" />
+                            <span className="hidden sm:inline">Tambah User</span>
+                        </button>
+                    </div>
                 </div>
             </header>
 
@@ -232,6 +273,23 @@ export default function AdminUsersPage() {
                     </div>
                 )}
 
+                {/* Filter */}
+                {divisions.length > 0 && (
+                    <div className="mb-4 flex items-center gap-2">
+                        <Filter className="w-4 h-4 text-gray-500" />
+                        <select
+                            value={filterDivision}
+                            onChange={e => setFilterDivision(e.target.value)}
+                            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 outline-none"
+                        >
+                            <option value="">Semua Divisi</option>
+                            {divisions.map(d => (
+                                <option key={d.id} value={d.id}>{d.name}</option>
+                            ))}
+                        </select>
+                    </div>
+                )}
+
                 {/* Users Table */}
                 <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-teal-100">
                     <div className="overflow-x-auto">
@@ -240,6 +298,7 @@ export default function AdminUsersPage() {
                                 <tr>
                                     <th className="px-4 py-3 text-left text-sm font-medium text-teal-900">Nama</th>
                                     <th className="px-4 py-3 text-left text-sm font-medium text-teal-900 hidden sm:table-cell">Email</th>
+                                    <th className="px-4 py-3 text-left text-sm font-medium text-teal-900 hidden lg:table-cell">Divisi</th>
                                     <th className="px-4 py-3 text-left text-sm font-medium text-teal-900">Role</th>
                                     <th className="px-4 py-3 text-left text-sm font-medium text-teal-900">Status</th>
                                     <th className="px-4 py-3 text-left text-sm font-medium text-teal-900 hidden md:table-cell">Kata Kunci</th>
@@ -247,82 +306,97 @@ export default function AdminUsersPage() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-teal-50">
-                                {users.map((user) => (
-                                    <tr key={user.id} className="hover:bg-teal-50/50 transition-colors">
-                                        <td className="px-4 py-3">
-                                            <div>
-                                                <p className="font-medium text-teal-900">{user.name}</p>
-                                                <p className="text-sm text-gray-500 sm:hidden">{user.email}</p>
-                                            </div>
-                                        </td>
-                                        <td className="px-4 py-3 text-gray-600 hidden sm:table-cell">{user.email}</td>
-                                        <td className="px-4 py-3">
-                                            <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${user.role === 'admin'
-                                                ? 'bg-indigo-100 text-indigo-700'
-                                                : 'bg-gray-100 text-gray-700'
-                                                }`}>
-                                                <Shield className="w-3 h-3" />
-                                                {user.role}
-                                            </span>
-                                        </td>
-                                        <td className="px-4 py-3">
-                                            <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${user.status === 'active'
-                                                ? 'bg-green-100 text-green-700'
-                                                : 'bg-red-100 text-red-700'
-                                                }`}>
-                                                {user.status === 'active' ? 'Aktif' : 'Nonaktif'}
-                                            </span>
-                                        </td>
-                                        <td className="px-4 py-3 hidden md:table-cell">
-                                            <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${user.is_first_login
-                                                ? 'bg-amber-100 text-amber-700'
-                                                : 'bg-green-100 text-green-700'
-                                                }`}>
-                                                <Key className="w-3 h-3" />
-                                                {user.is_first_login ? 'Belum Diganti' : 'Sudah Diganti'}
-                                            </span>
-                                        </td>
-                                        <td className="px-4 py-3">
-                                            <div className="flex items-center justify-end gap-1">
-                                                <button
-                                                    onClick={() => openEditModal(user)}
-                                                    className="p-2 hover:bg-teal-100 rounded-lg transition-colors"
-                                                    title="Edit"
-                                                >
-                                                    <Edit2 className="w-4 h-4 text-teal-600" />
-                                                </button>
-                                                <button
-                                                    onClick={() => handleResetPassword(user.id)}
-                                                    className="p-2 hover:bg-amber-100 rounded-lg transition-colors"
-                                                    title="Reset Password"
-                                                >
-                                                    <Key className="w-4 h-4 text-amber-600" />
-                                                </button>
-                                                <button
-                                                    onClick={() => handleToggleStatus(user)}
-                                                    className={`p-2 rounded-lg transition-colors ${user.status === 'active'
-                                                        ? 'hover:bg-red-100'
-                                                        : 'hover:bg-green-100'
-                                                        }`}
-                                                    title={user.status === 'active' ? 'Nonaktifkan' : 'Aktifkan'}
-                                                >
-                                                    {user.status === 'active' ? (
-                                                        <UserX className="w-4 h-4 text-red-600" />
+                                {users
+                                    .filter(user => !filterDivision || (user as User & { division_id?: string }).division_id === filterDivision)
+                                    .map((user) => {
+                                        const userWithDiv = user as User & { divisions?: { name: string } };
+                                        return (
+                                            <tr key={user.id} className="hover:bg-teal-50/50 transition-colors">
+                                                <td className="px-4 py-3">
+                                                    <div>
+                                                        <p className="font-medium text-teal-900">{user.name}</p>
+                                                        <p className="text-sm text-gray-500 sm:hidden">{user.email}</p>
+                                                    </div>
+                                                </td>
+                                                <td className="px-4 py-3 text-gray-600 hidden sm:table-cell">{user.email}</td>
+                                                <td className="px-4 py-3 hidden lg:table-cell">
+                                                    {userWithDiv.divisions?.name ? (
+                                                        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-teal-100 text-teal-700">
+                                                            <Building2 className="w-3 h-3" />
+                                                            {userWithDiv.divisions.name}
+                                                        </span>
                                                     ) : (
-                                                        <UserCheck className="w-4 h-4 text-green-600" />
+                                                        <span className="text-gray-400 text-sm">-</span>
                                                     )}
-                                                </button>
-                                                <button
-                                                    onClick={() => openDeleteModal(user)}
-                                                    className="p-2 hover:bg-red-100 rounded-lg transition-colors"
-                                                    title="Hapus User"
-                                                >
-                                                    <Trash2 className="w-4 h-4 text-red-600" />
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
+                                                </td>
+                                                <td className="px-4 py-3">
+                                                    <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${user.role === 'admin'
+                                                        ? 'bg-indigo-100 text-indigo-700'
+                                                        : 'bg-gray-100 text-gray-700'
+                                                        }`}>
+                                                        <Shield className="w-3 h-3" />
+                                                        {user.role}
+                                                    </span>
+                                                </td>
+                                                <td className="px-4 py-3">
+                                                    <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${user.status === 'active'
+                                                        ? 'bg-green-100 text-green-700'
+                                                        : 'bg-red-100 text-red-700'
+                                                        }`}>
+                                                        {user.status === 'active' ? 'Aktif' : 'Nonaktif'}
+                                                    </span>
+                                                </td>
+                                                <td className="px-4 py-3 hidden md:table-cell">
+                                                    <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${user.is_first_login
+                                                        ? 'bg-amber-100 text-amber-700'
+                                                        : 'bg-green-100 text-green-700'
+                                                        }`}>
+                                                        <Key className="w-3 h-3" />
+                                                        {user.is_first_login ? 'Belum Diganti' : 'Sudah Diganti'}
+                                                    </span>
+                                                </td>
+                                                <td className="px-4 py-3">
+                                                    <div className="flex items-center justify-end gap-1">
+                                                        <button
+                                                            onClick={() => openEditModal(user)}
+                                                            className="p-2 hover:bg-teal-100 rounded-lg transition-colors"
+                                                            title="Edit"
+                                                        >
+                                                            <Edit2 className="w-4 h-4 text-teal-600" />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleResetPassword(user.id)}
+                                                            className="p-2 hover:bg-amber-100 rounded-lg transition-colors"
+                                                            title="Reset Password"
+                                                        >
+                                                            <Key className="w-4 h-4 text-amber-600" />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleToggleStatus(user)}
+                                                            className={`p-2 rounded-lg transition-colors ${user.status === 'active'
+                                                                ? 'hover:bg-red-100'
+                                                                : 'hover:bg-green-100'
+                                                                }`}
+                                                            title={user.status === 'active' ? 'Nonaktifkan' : 'Aktifkan'}
+                                                        >
+                                                            {user.status === 'active' ? (
+                                                                <UserX className="w-4 h-4 text-red-600" />
+                                                            ) : (
+                                                                <UserCheck className="w-4 h-4 text-green-600" />
+                                                            )}
+                                                        </button>
+                                                        <button
+                                                            onClick={() => openDeleteModal(user)}
+                                                            className="p-2 hover:bg-red-100 rounded-lg transition-colors"
+                                                            title="Hapus User"
+                                                        >
+                                                            <Trash2 className="w-4 h-4 text-red-600" />
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
                             </tbody>
                         </table>
                     </div>
@@ -407,6 +481,25 @@ export default function AdminUsersPage() {
                                     </select>
                                 </div>
                             </div>
+
+                            {divisions.length > 0 && (
+                                <div>
+                                    <label className="block text-sm font-medium text-teal-900 mb-1">Divisi</label>
+                                    <div className="relative">
+                                        <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-teal-400" />
+                                        <select
+                                            value={formData.division_id}
+                                            onChange={(e) => setFormData({ ...formData, division_id: e.target.value })}
+                                            className="w-full pl-10 pr-4 py-3 bg-teal-50 border border-teal-200 rounded-xl text-teal-900 focus:ring-2 focus:ring-teal-500 focus:border-transparent appearance-none"
+                                        >
+                                            <option value="">Tidak Ada Divisi</option>
+                                            {divisions.map(d => (
+                                                <option key={d.id} value={d.id}>{d.name}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                </div>
+                            )}
 
                             <div className="flex gap-3 pt-2">
                                 <button
