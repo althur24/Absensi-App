@@ -22,7 +22,9 @@ import {
     Settings,
     FileSpreadsheet,
     X,
-    History
+    History,
+    Trash2,
+    Loader2
 } from 'lucide-react';
 import {
     BarChart,
@@ -92,6 +94,9 @@ export default function AdminDashboardPage() {
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<'overview' | 'late' | 'employees'>('overview');
     const [showLogoutModal, setShowLogoutModal] = useState(false);
+    const [showCleanupReminder, setShowCleanupReminder] = useState(false);
+    const [cleanupLoading, setCleanupLoading] = useState(false);
+    const [cleanupStats, setCleanupStats] = useState<{ photos_older_than_30_days: number; estimated_cleanup_mb: number } | null>(null);
     const [activityLogs, setActivityLogs] = useState<Array<{
         id: string;
         admin_name: string;
@@ -132,9 +137,37 @@ export default function AdminDashboardPage() {
         }
     }, [router]);
 
+    // Check if cleanup reminder should be shown
+    const checkCleanupReminder = useCallback(async () => {
+        const lastCleanup = localStorage.getItem('lastStorageCleanup');
+        const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000);
+
+        if (!lastCleanup || parseInt(lastCleanup) < thirtyDaysAgo) {
+            // Check if there are old photos
+            try {
+                const res = await fetch('/api/admin/cleanup');
+                if (res.ok) {
+                    const stats = await res.json();
+                    if (stats.photos_older_than_30_days > 0) {
+                        setCleanupStats(stats);
+                        setShowCleanupReminder(true);
+                    }
+                }
+            } catch (e) {
+                console.error('Cleanup check error:', e);
+            }
+        }
+    }, []);
+
     useEffect(() => {
         fetchData();
     }, [fetchData]);
+
+    useEffect(() => {
+        if (!loading && data) {
+            checkCleanupReminder();
+        }
+    }, [loading, data, checkCleanupReminder]);
 
     const handleLogout = () => {
         setShowLogoutModal(true);
@@ -143,6 +176,31 @@ export default function AdminDashboardPage() {
     const confirmLogout = async () => {
         await fetch('/api/auth/logout', { method: 'POST' });
         router.push('/login');
+    };
+
+    const handleCleanup = async () => {
+        setCleanupLoading(true);
+        try {
+            const res = await fetch('/api/admin/cleanup', { method: 'POST' });
+            if (res.ok) {
+                const result = await res.json();
+                localStorage.setItem('lastStorageCleanup', Date.now().toString());
+                setShowCleanupReminder(false);
+                alert(`✅ Cleanup berhasil!\n\n${result.deleted} foto dihapus.\nPerkiraan ruang yang dihemat: ${result.estimated_saved_mb} MB`);
+            } else {
+                alert('Gagal melakukan cleanup. Coba lagi.');
+            }
+        } catch (e) {
+            console.error('Cleanup error:', e);
+            alert('Terjadi kesalahan saat cleanup.');
+        } finally {
+            setCleanupLoading(false);
+        }
+    };
+
+    const dismissCleanupReminder = () => {
+        setShowCleanupReminder(false);
+        // Will show again next time dashboard is opened
     };
 
 
@@ -566,6 +624,80 @@ export default function AdminDashboardPage() {
                             >
                                 <LogOut className="w-5 h-5" />
                                 Keluar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Cleanup Reminder Modal */}
+            {showCleanupReminder && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+                    <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl">
+                        <div className="flex items-center justify-between p-4 border-b border-amber-100 bg-amber-50 rounded-t-2xl">
+                            <div className="flex items-center gap-2">
+                                <Trash2 className="w-5 h-5 text-amber-600" />
+                                <h2 className="text-lg font-bold text-amber-900">Pengingat Bersihkan Storage</h2>
+                            </div>
+                            <button
+                                onClick={dismissCleanupReminder}
+                                className="p-2 hover:bg-amber-100 rounded-lg transition-colors"
+                            >
+                                <X className="w-5 h-5 text-amber-600" />
+                            </button>
+                        </div>
+
+                        <div className="p-6">
+                            <div className="flex items-center justify-center mb-4">
+                                <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center">
+                                    <AlertTriangle className="w-8 h-8 text-amber-600" />
+                                </div>
+                            </div>
+                            <p className="text-gray-700 text-center mb-4">
+                                Sudah lebih dari <strong>30 hari</strong> sejak terakhir membersihkan storage foto absensi.
+                            </p>
+                            {cleanupStats && (
+                                <div className="bg-gray-50 rounded-xl p-4 mb-4">
+                                    <div className="flex justify-between text-sm mb-2">
+                                        <span className="text-gray-600">Foto lama (&gt;30 hari):</span>
+                                        <span className="font-bold text-gray-900">{cleanupStats.photos_older_than_30_days} foto</span>
+                                    </div>
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-gray-600">Perkiraan ruang:</span>
+                                        <span className="font-bold text-amber-600">~{cleanupStats.estimated_cleanup_mb} MB</span>
+                                    </div>
+                                </div>
+                            )}
+                            <p className="text-sm text-gray-500 text-center">
+                                Membersihkan foto lama akan menghemat ruang storage Supabase Anda.
+                            </p>
+                        </div>
+
+                        <div className="flex gap-3 p-4 border-t border-gray-100">
+                            <button
+                                type="button"
+                                onClick={dismissCleanupReminder}
+                                className="flex-1 py-3 border border-gray-200 text-gray-700 font-medium rounded-xl hover:bg-gray-50 transition-colors"
+                            >
+                                Nanti Saja
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleCleanup}
+                                disabled={cleanupLoading}
+                                className="flex-1 py-3 bg-amber-600 text-white font-medium rounded-xl hover:bg-amber-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                            >
+                                {cleanupLoading ? (
+                                    <>
+                                        <Loader2 className="w-5 h-5 animate-spin" />
+                                        Membersihkan...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Trash2 className="w-5 h-5" />
+                                        Bersihkan Sekarang
+                                    </>
+                                )}
                             </button>
                         </div>
                     </div>
