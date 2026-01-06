@@ -85,7 +85,24 @@ export default function CameraCapture({ onCapture, onClose }: CameraCaptureProps
 
         ctx.drawImage(video, 0, 0);
 
-        canvas.toBlob(
+        // Resize for compression - max 800px width/height
+        const MAX_SIZE = 800;
+        let finalCanvas = canvas;
+
+        if (canvas.width > MAX_SIZE || canvas.height > MAX_SIZE) {
+            const resizeCanvas = document.createElement('canvas');
+            const scale = Math.min(MAX_SIZE / canvas.width, MAX_SIZE / canvas.height);
+            resizeCanvas.width = canvas.width * scale;
+            resizeCanvas.height = canvas.height * scale;
+            const resizeCtx = resizeCanvas.getContext('2d');
+            if (resizeCtx) {
+                resizeCtx.drawImage(canvas, 0, 0, resizeCanvas.width, resizeCanvas.height);
+                finalCanvas = resizeCanvas;
+            }
+        }
+
+        // Convert to blob with 50% quality for storage savings
+        finalCanvas.toBlob(
             (blob) => {
                 if (blob) {
                     stopCamera();
@@ -93,7 +110,7 @@ export default function CameraCapture({ onCapture, onClose }: CameraCaptureProps
                 }
             },
             'image/jpeg',
-            0.8
+            0.5  // 50% quality for compression
         );
     };
 
