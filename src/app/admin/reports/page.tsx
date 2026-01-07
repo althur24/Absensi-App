@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { User } from '@/types';
+import * as XLSX from 'xlsx';
 import {
     ArrowLeft,
     FileSpreadsheet,
@@ -156,32 +157,24 @@ export default function AdminReportsPage() {
         }
     };
 
-    const downloadCSV = () => {
-        if (!reportData) return;
+    const downloadExcel = () => {
+        if (!reportData || !reportData.report || reportData.report.length === 0) return;
 
-        const headers = Object.keys(reportData.report[0] || {});
-        const csvContent = [
-            headers.join(','),
-            ...reportData.report.map(row =>
-                headers.map(h => {
-                    const val = row[h];
-                    // Escape commas and quotes
-                    if (typeof val === 'string' && (val.includes(',') || val.includes('"'))) {
-                        return `"${val.replace(/"/g, '""')}"`;
-                    }
-                    return val;
-                }).join(',')
-            )
-        ].join('\n');
+        // Create worksheet from report data
+        const worksheet = XLSX.utils.json_to_sheet(reportData.report);
 
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-
+        // Create workbook
+        const workbook = XLSX.utils.book_new();
         const reportType = REPORT_TYPES.find(t => t.id === selectedType);
+        const sheetName = reportType?.name || 'Laporan';
+        XLSX.utils.book_append_sheet(workbook, worksheet, sheetName.substring(0, 31)); // Sheet name max 31 chars
+
+        // Generate filename
         const timestamp = new Date().toISOString().split('T')[0];
-        link.download = `${reportType?.name.replace(/\s+/g, '_') || 'laporan'}_${timestamp}.csv`;
-        link.click();
+        const filename = `${sheetName.replace(/\s+/g, '_')}_${timestamp}.xlsx`;
+
+        // Download file
+        XLSX.writeFile(workbook, filename);
     };
 
     const selectedReportType = REPORT_TYPES.find(t => t.id === selectedType);
@@ -337,11 +330,11 @@ export default function AdminReportsPage() {
 
                         {reportData && reportData.report.length > 0 && (
                             <button
-                                onClick={downloadCSV}
+                                onClick={downloadExcel}
                                 className="px-6 py-2.5 bg-green-600 text-white font-medium rounded-xl hover:bg-green-700 flex items-center gap-2"
                             >
                                 <Download className="w-4 h-4" />
-                                Download CSV
+                                Download Excel
                             </button>
                         )}
                     </div>
