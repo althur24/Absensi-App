@@ -24,7 +24,8 @@ import {
     X,
     History,
     Trash2,
-    Loader2
+    Loader2,
+    Search
 } from 'lucide-react';
 import {
     BarChart,
@@ -97,6 +98,12 @@ export default function AdminDashboardPage() {
     const [showCleanupReminder, setShowCleanupReminder] = useState(false);
     const [cleanupLoading, setCleanupLoading] = useState(false);
     const [cleanupStats, setCleanupStats] = useState<{ photos_older_than_30_days: number; estimated_cleanup_mb: number } | null>(null);
+    const [selectedDate, setSelectedDate] = useState(() => {
+        // Default to today in YYYY-MM-DD format
+        const now = new Date();
+        return now.toLocaleDateString('en-CA'); // Returns YYYY-MM-DD
+    });
+    const [employeeSearch, setEmployeeSearch] = useState('');
     const [activityLogs, setActivityLogs] = useState<Array<{
         id: string;
         admin_name: string;
@@ -118,7 +125,7 @@ export default function AdminDashboardPage() {
                 return;
             }
 
-            const dashRes = await fetch('/api/admin/dashboard');
+            const dashRes = await fetch(`/api/admin/dashboard?date=${selectedDate}`);
             if (dashRes.ok) {
                 const dashData = await dashRes.json();
                 setData(dashData);
@@ -135,7 +142,7 @@ export default function AdminDashboardPage() {
         } finally {
             setLoading(false);
         }
-    }, [router]);
+    }, [router, selectedDate]);
 
     // Check if cleanup reminder should be shown
     const checkCleanupReminder = useCallback(async () => {
@@ -247,10 +254,23 @@ export default function AdminDashboardPage() {
                     <div className="flex items-center justify-between">
                         <div>
                             <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-                            <p className="text-teal-100 text-sm flex items-center gap-1">
-                                <Calendar className="w-4 h-4" />
-                                {new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-                            </p>
+                            <div className="flex items-center gap-2 mt-1">
+                                <Calendar className="w-4 h-4 text-teal-100" />
+                                <input
+                                    type="date"
+                                    value={selectedDate}
+                                    onChange={(e) => setSelectedDate(e.target.value)}
+                                    className="bg-transparent border border-white/30 rounded-lg px-2 py-1 text-sm text-white cursor-pointer hover:bg-white/10 transition-colors focus:outline-none focus:ring-2 focus:ring-white/50"
+                                />
+                                {selectedDate !== new Date().toLocaleDateString('en-CA') && (
+                                    <button
+                                        onClick={() => setSelectedDate(new Date().toLocaleDateString('en-CA'))}
+                                        className="text-xs bg-white/20 hover:bg-white/30 px-2 py-1 rounded-lg transition-colors"
+                                    >
+                                        Hari Ini
+                                    </button>
+                                )}
+                            </div>
                         </div>
                         <button
                             onClick={handleLogout}
@@ -454,17 +474,37 @@ export default function AdminDashboardPage() {
                 {/* Tab Content */}
                 {activeTab === 'overview' && (
                     <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-teal-100">
-                        <div className="px-4 py-3 border-b border-teal-100 flex items-center gap-2">
-                            <Clock className="w-5 h-5 text-teal-600" />
-                            <h2 className="font-semibold text-teal-900">Status Karyawan Hari Ini</h2>
+                        <div className="px-4 py-3 border-b border-teal-100 flex flex-wrap items-center justify-between gap-3">
+                            <div className="flex items-center gap-2">
+                                <Clock className="w-5 h-5 text-teal-600" />
+                                <h2 className="font-semibold text-teal-900">Status Karyawan Hari Ini</h2>
+                            </div>
+                            <div className="relative">
+                                <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                                <input
+                                    type="text"
+                                    placeholder="Cari nama..."
+                                    value={employeeSearch}
+                                    onChange={e => setEmployeeSearch(e.target.value)}
+                                    className="pl-9 pr-4 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 outline-none w-48"
+                                />
+                            </div>
                         </div>
-                        <div className="divide-y divide-teal-50">
-                            {data?.summary?.length === 0 ? (
+                        <div className="divide-y divide-teal-50 max-h-96 overflow-y-auto">
+                            {data?.summary?.filter(user =>
+                                !employeeSearch ||
+                                user.name.toLowerCase().includes(employeeSearch.toLowerCase()) ||
+                                user.email.toLowerCase().includes(employeeSearch.toLowerCase())
+                            ).length === 0 ? (
                                 <div className="p-8 text-center text-gray-500">
-                                    Tidak ada karyawan aktif
+                                    {employeeSearch ? 'Tidak ditemukan karyawan dengan nama tersebut' : 'Tidak ada karyawan aktif'}
                                 </div>
                             ) : (
-                                data?.summary?.map((user) => (
+                                data?.summary?.filter(user =>
+                                    !employeeSearch ||
+                                    user.name.toLowerCase().includes(employeeSearch.toLowerCase()) ||
+                                    user.email.toLowerCase().includes(employeeSearch.toLowerCase())
+                                ).map((user) => (
                                     <div key={user.user_id} className="px-4 py-3 flex items-center justify-between hover:bg-teal-50/50 transition-colors">
                                         <div>
                                             <p className="font-medium text-teal-900">{user.name}</p>

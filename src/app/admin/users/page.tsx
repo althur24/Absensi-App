@@ -20,7 +20,8 @@ import {
     Trash2,
     AlertTriangle,
     Building2,
-    Filter
+    Filter,
+    Search
 } from 'lucide-react';
 
 interface Division {
@@ -42,6 +43,7 @@ export default function AdminUsersPage() {
     const [deleting, setDeleting] = useState(false);
     const [message, setMessage] = useState({ type: '', text: '' });
     const [filterDivision, setFilterDivision] = useState('');
+    const [searchQuery, setSearchQuery] = useState('');
 
     useEffect(() => {
         fetchUsers();
@@ -273,22 +275,37 @@ export default function AdminUsersPage() {
                     </div>
                 )}
 
-                {/* Filter */}
-                {divisions.length > 0 && (
-                    <div className="mb-4 flex items-center gap-2">
-                        <Filter className="w-4 h-4 text-gray-500" />
-                        <select
-                            value={filterDivision}
-                            onChange={e => setFilterDivision(e.target.value)}
-                            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 outline-none"
-                        >
-                            <option value="">Semua Divisi</option>
-                            {divisions.map(d => (
-                                <option key={d.id} value={d.id}>{d.name}</option>
-                            ))}
-                        </select>
+                {/* Search and Filter */}
+                <div className="mb-4 flex flex-wrap gap-3">
+                    {/* Search */}
+                    <div className="relative flex-1 min-w-[200px]">
+                        <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                        <input
+                            type="text"
+                            placeholder="Cari nama atau email..."
+                            value={searchQuery}
+                            onChange={e => setSearchQuery(e.target.value)}
+                            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 outline-none"
+                        />
                     </div>
-                )}
+
+                    {/* Division Filter */}
+                    {divisions.length > 0 && (
+                        <div className="flex items-center gap-2">
+                            <Filter className="w-4 h-4 text-gray-500" />
+                            <select
+                                value={filterDivision}
+                                onChange={e => setFilterDivision(e.target.value)}
+                                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 outline-none"
+                            >
+                                <option value="">Semua Divisi</option>
+                                {divisions.map(d => (
+                                    <option key={d.id} value={d.id}>{d.name}</option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
+                </div>
 
                 {/* Users Table */}
                 <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-teal-100">
@@ -307,7 +324,16 @@ export default function AdminUsersPage() {
                             </thead>
                             <tbody className="divide-y divide-teal-50">
                                 {users
-                                    .filter(user => !filterDivision || (user as User & { division_id?: string }).division_id === filterDivision)
+                                    .filter(user => {
+                                        // Search filter
+                                        const matchesSearch = !searchQuery ||
+                                            user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                            user.email.toLowerCase().includes(searchQuery.toLowerCase());
+                                        // Division filter
+                                        const matchesDivision = !filterDivision ||
+                                            (user as User & { division_id?: string }).division_id === filterDivision;
+                                        return matchesSearch && matchesDivision;
+                                    })
                                     .map((user) => {
                                         const userWithDiv = user as User & { divisions?: { name: string } };
                                         return (
