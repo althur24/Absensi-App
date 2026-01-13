@@ -323,61 +323,66 @@ export default function AdminDashboardPage() {
                     </a>
                 </div>
 
-                {/* Stats Cards */}
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div className="bg-white rounded-xl shadow-sm p-4 border border-teal-100">
-                        <div className="flex items-center gap-2 mb-2">
-                            <Users className="w-4 h-4 text-teal-500" />
-                            <p className="text-gray-500 text-sm">Total Karyawan</p>
+                {/* All Stats Cards - 8 cards total */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                    {/* Row 1 on Desktop */}
+                    <div className="bg-white rounded-xl shadow-sm p-3 sm:p-4 border border-teal-100">
+                        <div className="flex items-center gap-1.5 mb-1">
+                            <Users className="w-4 h-4 text-teal-500 shrink-0" />
+                            <p className="text-gray-500 text-xs sm:text-sm">Total Karyawan</p>
                         </div>
-                        <p className="text-3xl font-bold text-teal-900">{data?.stats.total || 0}</p>
+                        <p className="text-2xl sm:text-3xl font-bold text-teal-900">{data?.stats.total || 0}</p>
                     </div>
-                    <div className="bg-white rounded-xl shadow-sm p-4 border border-green-100">
-                        <div className="flex items-center gap-2 mb-2">
-                            <UserCheck className="w-4 h-4 text-green-500" />
-                            <p className="text-gray-500 text-sm">Sudah Check In (Hari Ini)</p>
+                    <div className="bg-white rounded-xl shadow-sm p-3 sm:p-4 border border-green-100">
+                        <div className="flex items-center gap-1.5 mb-1">
+                            <UserCheck className="w-4 h-4 text-green-500 shrink-0" />
+                            <p className="text-gray-500 text-xs sm:text-sm">Sudah Check In</p>
                         </div>
-                        <p className="text-3xl font-bold text-green-600">{data?.stats.checked_in || 0}</p>
+                        <p className="text-2xl sm:text-3xl font-bold text-green-600">{data?.stats.checked_in || 0}</p>
                     </div>
-                    <div className="bg-white rounded-xl shadow-sm p-4 border border-red-100">
-                        <div className="flex items-center gap-2 mb-2">
-                            <UserX className="w-4 h-4 text-red-500" />
-                            <p className="text-gray-500 text-sm">Belum Absen (Hari Ini)</p>
+                    <div className="bg-white rounded-xl shadow-sm p-3 sm:p-4 border border-amber-100">
+                        <div className="flex items-center gap-1.5 mb-1">
+                            <Clock className="w-4 h-4 text-amber-500 shrink-0" />
+                            <p className="text-gray-500 text-xs sm:text-sm">Belum Pulang</p>
                         </div>
-                        <p className="text-3xl font-bold text-red-600">{data?.stats.not_checked_in || 0}</p>
+                        <p className="text-2xl sm:text-3xl font-bold text-amber-600">{(data?.stats.checked_in || 0) - (data?.stats.complete || 0)}</p>
                     </div>
-                    <div className="bg-white rounded-xl shadow-sm p-4 border border-indigo-100">
-                        <div className="flex items-center gap-2 mb-2">
-                            <CheckCircle2 className="w-4 h-4 text-indigo-500" />
-                            <p className="text-gray-500 text-sm">Lengkap (Hari Ini)</p>
+                    <div className="bg-white rounded-xl shadow-sm p-3 sm:p-4 border border-red-100">
+                        <div className="flex items-center gap-1.5 mb-1">
+                            <UserX className="w-4 h-4 text-red-500 shrink-0" />
+                            <p className="text-gray-500 text-xs sm:text-sm">Belum Absen</p>
                         </div>
-                        <p className="text-3xl font-bold text-indigo-600">{data?.stats.complete || 0}</p>
+                        <p className="text-2xl sm:text-3xl font-bold text-red-600">{data?.stats.not_checked_in || 0}</p>
                     </div>
-                </div>
 
-                {/* Analytics Cards */}
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-
-                    <div className="bg-white rounded-xl shadow-sm p-4 border border-teal-100">
-                        <div className="flex items-center gap-2 mb-2">
-                            <Timer className="w-4 h-4 text-teal-500" />
-                            <p className="text-gray-500 text-sm">Rata-rata Durasi (7 Hari)</p>
+                    {/* Row 2 on Desktop */}
+                    <div className="bg-white rounded-xl shadow-sm p-3 sm:p-4 border border-indigo-100">
+                        <div className="flex items-center gap-1.5 mb-1">
+                            <CheckCircle2 className="w-4 h-4 text-indigo-500 shrink-0" />
+                            <p className="text-gray-500 text-xs sm:text-sm">Lengkap</p>
                         </div>
-                        <p className="text-2xl font-bold text-teal-900">{data?.analytics.avgWorkDuration || '--'}</p>
+                        <p className="text-2xl sm:text-3xl font-bold text-indigo-600">{data?.stats.complete || 0}</p>
                     </div>
-                    <div className="bg-white rounded-xl shadow-sm p-4 border border-amber-100">
-                        <div className="flex items-center gap-2 mb-2">
-                            <AlertTriangle className="w-4 h-4 text-amber-500" />
-                            <p className="text-gray-500 text-sm">Terlambat ({'>'}{data?.analytics.lateThreshold || '09:00'})</p>
+                    <div className="bg-white rounded-xl shadow-sm p-3 sm:p-4 border border-teal-100">
+                        <div className="flex items-center gap-1.5 mb-1">
+                            <Timer className="w-4 h-4 text-teal-500 shrink-0" />
+                            <p className="text-gray-500 text-xs sm:text-sm">Rata-rata Durasi</p>
                         </div>
-                        <p className="text-2xl font-bold text-amber-600">{data?.analytics.lateCount || 0}</p>
+                        <p className="text-2xl sm:text-3xl font-bold text-teal-900">{data?.analytics.avgWorkDuration || '--'}</p>
                     </div>
-                    <div className="bg-white rounded-xl shadow-sm p-4 border border-green-100">
-                        <div className="flex items-center gap-2 mb-2">
-                            <TrendingUp className="w-4 h-4 text-green-500" />
-                            <p className="text-gray-500 text-sm">Tingkat Kehadiran</p>
+                    <div className="bg-white rounded-xl shadow-sm p-3 sm:p-4 border border-orange-100">
+                        <div className="flex items-center gap-1.5 mb-1">
+                            <AlertTriangle className="w-4 h-4 text-orange-500 shrink-0" />
+                            <p className="text-gray-500 text-xs sm:text-sm">Terlambat</p>
                         </div>
-                        <p className="text-2xl font-bold text-green-600">
+                        <p className="text-2xl sm:text-3xl font-bold text-orange-600">{data?.analytics.lateCount || 0}</p>
+                    </div>
+                    <div className="bg-white rounded-xl shadow-sm p-3 sm:p-4 border border-emerald-100">
+                        <div className="flex items-center gap-1.5 mb-1">
+                            <TrendingUp className="w-4 h-4 text-emerald-500 shrink-0" />
+                            <p className="text-gray-500 text-xs sm:text-sm">Kehadiran</p>
+                        </div>
+                        <p className="text-2xl sm:text-3xl font-bold text-emerald-600">
                             {data?.stats.total ? Math.round((data.stats.checked_in / data.stats.total) * 100) : 0}%
                         </p>
                     </div>
