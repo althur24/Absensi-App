@@ -1,11 +1,11 @@
 {
-    "name": "Absensi",
-    "short_name": "Absensi",
+    "name": "Absensi Kite",
+    "short_name": "Absensi Kite",
     "description": "Sistem absensi karyawan dengan foto selfie dan GPS",
     "start_url": "/",
     "display": "standalone",
     "background_color": "#ffffff",
-    "theme_color": "#4F46E5",
+    "theme_color": "#0D9488",
     "orientation": "portrait",
     "icons": [
         {
