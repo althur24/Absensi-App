@@ -424,25 +424,33 @@ export default function AdminDashboardPage() {
                             <PieChartIcon className="w-5 h-5 text-teal-600" />
                             <h3 className="font-semibold text-teal-900">Status Hari Ini</h3>
                         </div>
-                        <div className="h-64">
+                        <div className="h-64 sm:h-72">
                             <ResponsiveContainer width="100%" height="100%">
                                 <PieChart>
                                     <Pie
                                         data={pieData}
                                         cx="50%"
-                                        cy="50%"
-                                        innerRadius={60}
-                                        outerRadius={80}
+                                        cy="45%"
+                                        innerRadius={50}
+                                        outerRadius={70}
                                         paddingAngle={5}
                                         dataKey="value"
-                                        label={({ name, value }) => `${name}: ${value}`}
                                     >
                                         {pieData.map((item, index) => (
                                             <Cell key={`cell-${index}`} fill={item.color} />
                                         ))}
                                     </Pie>
-                                    <Tooltip />
-                                    <Legend />
+                                    <Tooltip formatter={(value, name) => [`${value} orang`, name]} />
+                                    <Legend
+                                        layout="horizontal"
+                                        verticalAlign="bottom"
+                                        align="center"
+                                        wrapperStyle={{ paddingTop: '15px' }}
+                                        formatter={(value, entry) => {
+                                            const item = pieData.find(d => d.name === value);
+                                            return `${value}: ${item?.value || 0}`;
+                                        }}
+                                    />
                                 </PieChart>
                             </ResponsiveContainer>
                         </div>
