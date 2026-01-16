@@ -36,7 +36,6 @@ export async function POST(request: Request) {
 
         // Get today's date in WIB
         const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' });
-        const now = new Date().toISOString();
 
         if (action === 'checkin') {
             // Check if already checked in today
@@ -44,20 +43,21 @@ export async function POST(request: Request) {
                 .from('attendance')
                 .select('id')
                 .eq('user_id', user_id)
-                .eq('date', today)
-                .single();
+                .eq('type', 'checkin')
+                .gte('created_at', `${today}T00:00:00`)
+                .lte('created_at', `${today}T23:59:59`)
+                .maybeSingle();
 
             if (existing) {
                 return NextResponse.json({ error: 'User sudah check-in hari ini' }, { status: 400 });
             }
 
-            // Create check-in record
+            // Create check-in record (same structure as normal checkin)
             const { data: attendance, error: insertError } = await supabase
                 .from('attendance')
                 .insert({
                     user_id,
-                    date: today,
-                    checkin_time: now,
+                    type: 'checkin',
                     photo_url: null, // No photo for admin-assisted
                     latitude: null,
                     longitude: null,
@@ -92,36 +92,52 @@ export async function POST(request: Request) {
             });
 
         } else {
-            // Check-out
-            const { data: existing, error: fetchError } = await supabase
+            // Check-out - check if user has checked in today but not checked out
+            const { data: checkinRecord } = await supabase
                 .from('attendance')
-                .select('id, checkout_time')
+                .select('id, created_at')
                 .eq('user_id', user_id)
-                .eq('date', today)
-                .single();
+                .eq('type', 'checkin')
+                .gte('created_at', `${today}T00:00:00`)
+                .lte('created_at', `${today}T23:59:59`)
+                .maybeSingle();
 
-            if (fetchError || !existing) {
+            if (!checkinRecord) {
                 return NextResponse.json({ error: 'User belum check-in hari ini' }, { status: 400 });
             }
 
-            if (existing.checkout_time) {
+            // Check if already checked out
+            const { data: checkoutRecord } = await supabase
+                .from('attendance')
+                .select('id')
+                .eq('user_id', user_id)
+                .eq('type', 'checkout')
+                .gte('created_at', `${today}T00:00:00`)
+                .lte('created_at', `${today}T23:59:59`)
+                .maybeSingle();
+
+            if (checkoutRecord) {
                 return NextResponse.json({ error: 'User sudah check-out hari ini' }, { status: 400 });
             }
 
-            // Update with checkout
-            const { data: attendance, error: updateError } = await supabase
+            // Create checkout record
+            const { data: attendance, error: insertError } = await supabase
                 .from('attendance')
-                .update({
-                    checkout_time: now,
-                    address: `Dibantu oleh Admin${reason ? `: ${reason}` : ''}`
+                .insert({
+                    user_id,
+                    type: 'checkout',
+                    photo_url: null,
+                    latitude: null,
+                    longitude: null,
+                    address: `Dibantu oleh Admin${reason ? `: ${reason}` : ''}`,
+                    device_info: { assisted_by: session.name || 'Admin', reason: reason || 'HP tidak bisa digunakan' }
                 })
-                .eq('id', existing.id)
                 .select()
                 .single();
 
-            if (updateError) {
-                console.error('Update error:', updateError);
-                return NextResponse.json({ error: 'Gagal update absensi' }, { status: 500 });
+            if (insertError) {
+                console.error('Insert error:', insertError);
+                return NextResponse.json({ error: 'Gagal membuat absensi' }, { status: 500 });
             }
 
             // Log admin action
