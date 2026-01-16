@@ -12,7 +12,8 @@ export type AdminAction =
     | 'leave_reject'
     | 'division_create'
     | 'division_update'
-    | 'division_delete';
+    | 'division_delete'
+    | 'attendance_assist';
 
 interface LogDetails {
     [key: string]: string | number | boolean | null | undefined;
@@ -53,4 +54,5 @@ export const actionLabels: Record<AdminAction, string> = {
     division_create: 'Menambah Divisi',
     division_update: 'Mengubah Divisi',
     division_delete: 'Menghapus Divisi',
+    attendance_assist: 'Membantu Absensi Karyawan',
 };

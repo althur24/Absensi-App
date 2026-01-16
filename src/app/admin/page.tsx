@@ -25,7 +25,9 @@ import {
     History,
     Trash2,
     Loader2,
-    Search
+    Search,
+    LogIn,
+    HelpCircle
 } from 'lucide-react';
 import {
     BarChart,
@@ -104,6 +106,8 @@ export default function AdminDashboardPage() {
         return now.toLocaleDateString('en-CA'); // Returns YYYY-MM-DD
     });
     const [employeeSearch, setEmployeeSearch] = useState('');
+    const [assistModal, setAssistModal] = useState<{ show: boolean; user: { id: string; name: string; status: string } | null; action: 'checkin' | 'checkout' | null }>({ show: false, user: null, action: null });
+    const [assistLoading, setAssistLoading] = useState(false);
     const [activityLogs, setActivityLogs] = useState<Array<{
         id: string;
         admin_name: string;
@@ -210,6 +214,37 @@ export default function AdminDashboardPage() {
         // Will show again next time dashboard is opened
     };
 
+    const handleAssistAttendance = async () => {
+        if (!assistModal.user || !assistModal.action) return;
+
+        setAssistLoading(true);
+        try {
+            const res = await fetch('/api/admin/assist-attendance', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    user_id: assistModal.user.id,
+                    action: assistModal.action,
+                    reason: 'HP tidak bisa digunakan'
+                })
+            });
+
+            const result = await res.json();
+
+            if (res.ok) {
+                alert(`✅ ${result.message}`);
+                setAssistModal({ show: false, user: null, action: null });
+                fetchData(); // Refresh data
+            } else {
+                alert(`❌ ${result.error}`);
+            }
+        } catch (e) {
+            console.error('Assist error:', e);
+            alert('Terjadi kesalahan');
+        } finally {
+            setAssistLoading(false);
+        }
+    };
 
 
     if (loading) {
@@ -526,17 +561,38 @@ export default function AdminDashboardPage() {
                                                 <p className="text-xs text-teal-600 mt-0.5">{user.division}</p>
                                             )}
                                         </div>
-                                        <div className="text-right">
-                                            <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(user.status)}`}>
-                                                {getStatusText(user.status, user.leave)}
-                                            </span>
-                                            <div className="text-xs text-gray-500 mt-1">
-                                                {user.checkin_time && (
-                                                    <span>In: {formatTime(user.checkin_time)}</span>
-                                                )}
-                                                {user.checkout_time && (
-                                                    <span className="ml-2">Out: {formatTime(user.checkout_time)}</span>
-                                                )}
+                                        <div className="flex items-center gap-2">
+                                            {/* Assist Buttons */}
+                                            {user.status === 'not_checked_in' && !user.leave && selectedDate === new Date().toLocaleDateString('en-CA') && (
+                                                <button
+                                                    onClick={() => setAssistModal({ show: true, user: { id: user.user_id, name: user.name, status: user.status }, action: 'checkin' })}
+                                                    className="p-1.5 rounded-lg bg-green-100 text-green-600 hover:bg-green-200 transition-colors"
+                                                    title="Bantu Check-in"
+                                                >
+                                                    <LogIn className="w-4 h-4" />
+                                                </button>
+                                            )}
+                                            {user.status === 'checked_in' && selectedDate === new Date().toLocaleDateString('en-CA') && (
+                                                <button
+                                                    onClick={() => setAssistModal({ show: true, user: { id: user.user_id, name: user.name, status: user.status }, action: 'checkout' })}
+                                                    className="p-1.5 rounded-lg bg-amber-100 text-amber-600 hover:bg-amber-200 transition-colors"
+                                                    title="Bantu Check-out"
+                                                >
+                                                    <LogOut className="w-4 h-4" />
+                                                </button>
+                                            )}
+                                            <div className="text-right">
+                                                <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(user.status)}`}>
+                                                    {getStatusText(user.status, user.leave)}
+                                                </span>
+                                                <div className="text-xs text-gray-500 mt-1">
+                                                    {user.checkin_time && (
+                                                        <span>In: {formatTime(user.checkin_time)}</span>
+                                                    )}
+                                                    {user.checkout_time && (
+                                                        <span className="ml-2">Out: {formatTime(user.checkout_time)}</span>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -749,6 +805,78 @@ export default function AdminDashboardPage() {
                                     <>
                                         <Trash2 className="w-5 h-5" />
                                         Bersihkan Sekarang
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Assist Attendance Modal */}
+            {assistModal.show && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+                    <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl">
+                        <div className="flex items-center justify-between p-4 border-b border-teal-100 bg-teal-50 rounded-t-2xl">
+                            <div className="flex items-center gap-2">
+                                <HelpCircle className="w-5 h-5 text-teal-600" />
+                                <h2 className="text-lg font-bold text-teal-900">Bantu Absensi</h2>
+                            </div>
+                            <button
+                                onClick={() => setAssistModal({ show: false, user: null, action: null })}
+                                className="p-2 hover:bg-teal-100 rounded-lg transition-colors"
+                            >
+                                <X className="w-5 h-5 text-teal-600" />
+                            </button>
+                        </div>
+
+                        <div className="p-6">
+                            <div className="text-center mb-4">
+                                <div className={`inline-flex items-center justify-center w-16 h-16 rounded-full mb-3 ${assistModal.action === 'checkin' ? 'bg-green-100' : 'bg-amber-100'
+                                    }`}>
+                                    {assistModal.action === 'checkin' ? (
+                                        <LogIn className="w-8 h-8 text-green-600" />
+                                    ) : (
+                                        <LogOut className="w-8 h-8 text-amber-600" />
+                                    )}
+                                </div>
+                                <p className="text-lg font-semibold text-gray-900">
+                                    {assistModal.action === 'checkin' ? 'Bantu Check-in' : 'Bantu Check-out'}
+                                </p>
+                                <p className="text-gray-600 mt-2">
+                                    Anda akan membantu <strong>{assistModal.user?.name}</strong> untuk {assistModal.action === 'checkin' ? 'check-in' : 'check-out'} karena HP tidak bisa digunakan.
+                                </p>
+                            </div>
+
+                            <div className="bg-gray-50 rounded-xl p-3 text-sm text-gray-600">
+                                <p>⚠️ Catatan: Absensi ini akan dicatat sebagai &quot;Dibantu oleh Admin&quot; tanpa foto dan lokasi GPS.</p>
+                            </div>
+                        </div>
+
+                        <div className="flex gap-3 p-4 border-t border-gray-100">
+                            <button
+                                type="button"
+                                onClick={() => setAssistModal({ show: false, user: null, action: null })}
+                                className="flex-1 py-3 border border-gray-200 text-gray-700 font-medium rounded-xl hover:bg-gray-50 transition-colors"
+                            >
+                                Batal
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleAssistAttendance}
+                                disabled={assistLoading}
+                                className={`flex-1 py-3 text-white font-medium rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-50 ${assistModal.action === 'checkin' ? 'bg-green-600 hover:bg-green-700' : 'bg-amber-600 hover:bg-amber-700'
+                                    }`}
+                            >
+                                {assistLoading ? (
+                                    <>
+                                        <Loader2 className="w-5 h-5 animate-spin" />
+                                        Memproses...
+                                    </>
+                                ) : (
+                                    <>
+                                        {assistModal.action === 'checkin' ? <LogIn className="w-5 h-5" /> : <LogOut className="w-5 h-5" />}
+                                        Konfirmasi
                                     </>
                                 )}
                             </button>
