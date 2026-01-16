@@ -58,9 +58,9 @@ export async function POST(request: Request) {
                 .insert({
                     user_id,
                     type: 'checkin',
-                    photo_url: null, // No photo for admin-assisted
-                    latitude: null,
-                    longitude: null,
+                    photo_url: '', // Empty for admin-assisted (no photo)
+                    latitude: 0,
+                    longitude: 0,
                     address: `Dibantu oleh Admin${reason ? `: ${reason}` : ''}`,
                     device_info: { assisted_by: session.name || 'Admin', reason: reason || 'HP tidak bisa digunakan' }
                 })
@@ -126,9 +126,9 @@ export async function POST(request: Request) {
                 .insert({
                     user_id,
                     type: 'checkout',
-                    photo_url: null,
-                    latitude: null,
-                    longitude: null,
+                    photo_url: '', // Empty for admin-assisted (no photo)
+                    latitude: 0,
+                    longitude: 0,
                     address: `Dibantu oleh Admin${reason ? `: ${reason}` : ''}`,
                     device_info: { assisted_by: session.name || 'Admin', reason: reason || 'HP tidak bisa digunakan' }
                 })
