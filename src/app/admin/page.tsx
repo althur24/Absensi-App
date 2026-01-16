@@ -566,19 +566,21 @@ export default function AdminDashboardPage() {
                                             {user.status === 'not_checked_in' && !user.leave && selectedDate === new Date().toLocaleDateString('en-CA') && (
                                                 <button
                                                     onClick={() => setAssistModal({ show: true, user: { id: user.user_id, name: user.name, status: user.status }, action: 'checkin' })}
-                                                    className="p-1.5 rounded-lg bg-green-100 text-green-600 hover:bg-green-200 transition-colors"
-                                                    title="Bantu Check-in"
+                                                    className="flex items-center gap-1 px-2 py-1 rounded-lg bg-green-100 text-green-700 hover:bg-green-200 transition-colors text-xs font-medium"
+                                                    title="Bantu Absen Masuk"
                                                 >
-                                                    <LogIn className="w-4 h-4" />
+                                                    <LogIn className="w-3.5 h-3.5" />
+                                                    <span className="hidden sm:inline">Bantu Masuk</span>
                                                 </button>
                                             )}
                                             {user.status === 'checked_in' && selectedDate === new Date().toLocaleDateString('en-CA') && (
                                                 <button
                                                     onClick={() => setAssistModal({ show: true, user: { id: user.user_id, name: user.name, status: user.status }, action: 'checkout' })}
-                                                    className="p-1.5 rounded-lg bg-amber-100 text-amber-600 hover:bg-amber-200 transition-colors"
-                                                    title="Bantu Check-out"
+                                                    className="flex items-center gap-1 px-2 py-1 rounded-lg bg-amber-100 text-amber-700 hover:bg-amber-200 transition-colors text-xs font-medium"
+                                                    title="Bantu Absen Pulang"
                                                 >
-                                                    <LogOut className="w-4 h-4" />
+                                                    <LogOut className="w-3.5 h-3.5" />
+                                                    <span className="hidden sm:inline">Bantu Pulang</span>
                                                 </button>
                                             )}
                                             <div className="text-right">
