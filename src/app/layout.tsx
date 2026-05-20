@@ -8,6 +8,11 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(
+    process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}`
+      : "http://localhost:3000"
+  ),
   title: "Absensi Kite",
   description: "Aplikasi absensi karyawan dengan foto selfie dan GPS",
   manifest: "/manifest.json",
